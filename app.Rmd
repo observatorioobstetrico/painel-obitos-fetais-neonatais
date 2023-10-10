@@ -1,0 +1,482 @@
+---
+title: "Óbitos Fetais e Neonatais" 
+output: 
+  flexdashboard::flex_dashboard:
+    logo: www/logo-oobr.png
+    favicon: www/logo-oobr-browser.png
+    theme:
+      version: 4
+      navbar-bg: "#0A1E3C"
+    orientation: rows
+    source_code: embed
+    navbar:
+        - { icon: "fa-github", href: "https://github.com/observatorioobstetrico/painel-obitos-fetais-neonatais", target: _blank, align: right}
+        - { icon: "fa-twitter", href: "https://twitter.com/observatorioobr", target: _blank, align: right}
+        - { icon: "fa-instagram", href: "https://www.instagram.com/observatorioobr", target: _blank, align: right}
+        - { icon: "fa-youtube", href: "https://www.youtube.com/channel/UCp4k0g_6yP-S8G2DU6_lSeQ", target: _blank, align: right }
+        - { icon: "fa-envelope", href: "mailto:comunicacao@observatorioobstetricobr.org", target: _blank, align: right }
+runtime: shiny   
+---
+
+<style>
+.navbar.navbar-inverse {
+  background-color: #0A1E3C !important;
+  border-color: #0A1E3C !important;
+}
+.navbar-brand {
+    color: #ffffff !important;
+    font-size: 1.3rem;
+    vertical-align: middle;
+}
+body {
+    font-size: 1em;
+    background: white;
+    padding: 83px 15px 8px;
+}
+.section.sidebar {
+  top: 50px;
+  background-color: #eaf2ff;
+  color: #000000
+}
+.negrito {
+  font-weight: 700;
+}
+.chart-title {
+    border-bottom: 1px solid #dee2e6;
+    font-size: 1.1em;
+    font-weight: 600;
+    padding: 7px 10px 4px;
+}
+</style>
+
+
+```{r}
+knitr::opts_chunk$set(message = FALSE)
+```
+
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(shiny)
+library(reactable)
+library(reactablefmtr)
+library(openxlsx)
+
+
+#Carregando os arquivos necessários
+dados_obitos_fetais <- read_delim("R/databases/dados_obitos_fetais.csv", 
+                                    delim = ",", escape_double = FALSE, trim_ws = TRUE) 
+
+dados_obitos_neonatais <- read_delim("R/databases/dados_obitos_neonatais.csv", 
+                                    delim = ",", escape_double = FALSE, trim_ws = TRUE) 
+
+
+dados_obitos_fetais_neonatais <- rbind(dados_obitos_fetais, dados_obitos_neonatais) 
+
+tabela_aux_municipios <- read_delim("tabela_auxiliar_municipios.csv", 
+                                              delim = ",", escape_double = FALSE, trim_ws = TRUE) 
+
+estadosChoices <- sort(unique(tabela_aux_municipios$uf))
+
+#Definindo as configurações globais das tabelas
+options(reactable.theme = reactableTheme(
+  borderColor = "#dfe2e5",
+  stripedColor = "#e5efff",
+  highlightColor = "#CDDEFC",
+  cellPadding = "8px 12px",
+  searchInputStyle = list(width = "100%")
+))
+```
+
+<!-- Sobre -->
+<!-- ============================================= -->
+
+
+<!-- <h3><span style = "font-weight: bold;">O OOBr Óbitos Fetais e Neonatais</span></h3> -->
+
+<!-- É um painel de visualização dinâmico com análises acerca da mortalidade de fetos e neonatos no Brasil, sob a perspectiva de algumas variáveis da base de dados do Sistema de Informações sobre Mortalidade (SIM). As informações consideradas são referentes aos registros de óbitos de fetos e neonatos dos anos de 1996 a 2022.  -->
+
+<!-- <h3><span style = "font-weight: bold;">O Observatório Obstétrico Brasileiro (OOBr)</span></h3> -->
+
+<!-- Tem como objetivo disponibilizar plataformas interativas de monitoramento e análises de dados públicos cientificamente embasadas e disseminar informações de qualidade e relevantes acerca da área da saúde materno-infantil. -->
+
+<!-- Conta com **pesquisadores** da <a href = https://www.ufes.br target = _blank> Universidade Federal do Espírito Santo (UFES) </a> e da <a href = https://www5.usp.br target = _blank> Universidade de São Paulo (USP)</a>. Para maiores informações, veja o <a href = https://observatorioobstetricobr.org/ target = _blank> site do OOBr</a>. -->
+
+<!-- <h3><span style = "font-weight: bold;">Os dados</span></h3> -->
+
+<!-- <<<<<<< HEAD -->
+<!-- São providos do DATASUS do Ministério da Saúde e formam um grande banco anual composto por todos os registros das declarações de óbitos a partir do ano de 1996. Nessa plataforma, os dados do SIM são previamente tratados pela PCDaS com base no fluxo ETL (_Extract_, _Transform_ e _Load_). Atualmente, a PCDaS disponibiliza dados do SIM até 2022 **(sendo estes preliminares)**, atualizados na última sexta feira de cada mês, tendo a última atualização ocorrido em 08 de outubro de 2023. -->
+
+<!-- <h3><span style = "font-weight: bold;">Como citar esse painel</span></h3> -->
+
+<!-- Observatório Obstétrico Brasileiro. OOBr Óbitos de Gestantes e Puérperas, 2022. Disponível em  https://observatorioobstetrico.shinyapps.io/obitos-grav-puerp. DOI: https://doi.org/10.7303/syn44144271. -->
+
+<!-- <h3><span style = "font-weight: bold;">Contato</span></h3> -->
+
+<!-- Para comentários, sugestões e colaborações científicas, por favor, envie uma mensagem para <a href="mailto:comunicacao@observatorioobstetricobr.org"> comunicacao@observatorioobstetricobr.org</a>. E para acompanhar o trabalho do OOBr de perto, siga-o nas redes acessando os ícones do canto superior direito.   -->
+
+<!-- <h3><span style = "font-weight: bold;">Realização</span></h3> -->
+
+<!-- <center> -->
+<!-- ```{r, out.width="10%", fig.show='hold'} -->
+<!-- knitr::include_graphics(c( -->
+<!--   "www/logos/realizacao/logo_oobr.png", -->
+<!--   "www/logos/realizacao/logo_ufes.png", -->
+<!--   "www/logos/realizacao/logo_medicina_usp.png",  -->
+<!--   "www/logos/realizacao/logo_daslab.png" -->
+<!-- )) -->
+<!-- ``` -->
+<!-- </center> -->
+
+<!-- <h3><span style = "font-weight: bold;">Financiadores</span></h3> -->
+
+<!-- <center> -->
+<!-- ```{r, teste, out.width="10%", fig.show='hold'} -->
+<!-- knitr::include_graphics(c( -->
+<!--   "www/logos/financiadores/logo_bill_melinda.png", -->
+<!--   "www/logos/financiadores/logo_cnpq.png", -->
+<!--   "www/logos/financiadores/logo_ms1.png",  -->
+<!--   "www/logos/financiadores/logo_ms2.png",  -->
+<!--   "www/logos/financiadores/logo_ms3.png",  -->
+<!--   "www/logos/financiadores/logo_fapes.png", -->
+<!--   "www/logos/financiadores/logo_fapes2.png" -->
+<!-- )) -->
+<!-- ``` -->
+<!-- </center> -->
+
+
+<!-- <h3><span style = "font-weight: bold;">Apoio</span></h3> -->
+
+<!-- <center> -->
+<!-- ```{r, out.width="8%", fig.show='hold'} -->
+<!-- knitr::include_graphics(c( -->
+<!--   "www/logos/apoio/logo_pcdas.png", -->
+<!--   "www/logos/apoio/logo_odd.png" -->
+<!-- )) -->
+<!-- ``` -->
+<!-- </center> -->
+
+
+
+<!-- Óbitos maternos oficiais {data-navmenu="Visualizações"} -->
+<!-- ========================================================= -->
+
+Óbitos fetais, neonatais e pós-neonatais {data-navmenu="Visualizações"}
+=========================================================
+
+Inputs {.sidebar data-width=350 style="width: 350px; visibility: visible; top: 75px;"}
+------------------------------------- 
+```{r input-obitosM}
+# hr();h5(span("Óbitos maternos oficiais", style = "font-weight: bold;")); hr()
+# p(em("Obs.: os dados de 2022 são preliminares."))
+
+hr();h5(span("Óbitos fetais, neonatais e pós-neonatais", style = "font-weight: bold;")); hr()
+
+selectInput(
+  inputId = "selectTipo",
+  label = HTML("<span class = 'negrito'> Selecione o tipo de óbito: </span>"),
+  choices = sort(unique(dados_obitos_fetais_neonatais$tipo_do_obito))
+)
+
+hr()
+span("Temporalidade e localidade", style = "font-weight: bold; font-size: 17px")
+HTML("<span style='display: block; margin-bottom: 7px;'> </span>")
+
+numericInput(
+  inputId = "selectAno",
+  label = HTML("<span class = 'negrito'> Selecione o ano de análise: </span>"),
+  value = max(dados_obitos_fetais_neonatais$ano),
+  min = min(dados_obitos_fetais_neonatais$ano),
+  max = max(dados_obitos_fetais_neonatais$ano)
+)
+
+selectInput(
+  inputId = "selectNivel",
+  label = HTML("<span class = 'negrito'> Selecione o nível de análise: </span>"),
+  choices = c("Nacional", "Estadual", "Municipal"),
+  selected = "Nacional"
+)
+
+conditionalPanel(
+  condition = "input.selectNivel == 'Nacional'",
+  checkboxGroupInput(
+    inputId = "selectRegiao",
+    label = HTML("<span class = 'negrito'> Selecione as regiões de análise: </span>"),
+    choices = c("Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"),
+    selected = c("Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul")
+  )
+)
+
+conditionalPanel(
+  condition = "input.selectNivel == 'Estadual'",
+  selectInput(
+    inputId = "selectEstado",
+    label = HTML("<span class = 'negrito'> Selecione o estado: </span>"),
+    choices = estadosChoices,
+    multiple = FALSE
+    )
+)
+
+conditionalPanel(
+    condition = "input.selectNivel == 'Municipal'",
+    selectizeInput(
+      inputId = "selectEstadoMuni",
+      label = HTML("<span class = 'negrito'> Selecione o estado ao qual pertence o município: </span>"),
+      choices = estadosChoices,
+      options = list(placeholder = "Selecione um estado")
+    ),
+    selectizeInput(
+      inputId = "selectMunicipio",
+      label = HTML("<span class = 'negrito'> Selecione o município: </span>"),
+      choices = NULL,
+      options = list(placeholder = "Selecione um município")
+    )
+)
+
+observeEvent(input$selectEstadoMuni, {
+  updateSelectizeInput(
+    inputId = "selectMunicipio",
+    choices = sort(tabela_aux_municipios |> dplyr::filter(uf == input$selectEstadoMuni) |> pull(municipio) |> unique())
+  )
+})
+
+
+
+hr()
+span("Características do feto ou neonato", style = "font-weight: bold; font-size: 17px")
+HTML("<span style='display: block; margin-bottom: 7px;'> </span>")
+
+
+checkboxGroupInput(
+  inputId = "selectPeso",
+  label = HTML("<span class = 'negrito'> Selecione as faixas de peso ao nascer: </span>"),
+  choices = c("< 1500 g", "1500 a 1999 g", "2000 a 2499 g", "≥ 2500 g", "Sem informação"),
+  selected = c("< 1500 g", "1500 a 1999 g", "2000 a 2499 g", "≥ 2500 g", "Sem informação")
+)
+
+hr()
+
+selectInput(
+  inputId = "selectDownload",
+  label = HTML("<span class = 'negrito'> Deseja fazer o download dessa tabela? </span>"),
+  choices = c("Não", "Sim"),
+  selected = "Não"
+)
+
+conditionalPanel(
+  condition = "input.selectDownload == 'Sim'",
+  selectInput(
+    inputId = "selectArquivo",
+    label = HTML("<span class = 'negrito'> Selecione o tipo do arquivo: </span>"),
+    choices = c("CSV", "XLSX"),
+    selected = "CSV"
+  ),
+  conditionalPanel(
+    condition = "input.selectArquivo == 'CSV'",
+    downloadHandler(
+      filename = reactive({
+        case_when(
+          input$selectNivel == "Nacional" ~ paste0("obitos_fetais_neonatais_", janitor::make_clean_names(input$selectNivel), input$selectAno, ".csv"),
+          input$selectNivel == "Estadual" ~ paste0("obitos_fetais_neonatais_", janitor::make_clean_names(input$selectEstado), input$selectAno, ".csv"),
+          input$selectNivel == "Municipal" ~
+            paste0("obitos_fetais_neonatais_", janitor::make_clean_names(gsub(" ", "_", gsub(" - ", " ", input$selectMunicipio))), input$selectAno, ".csv")
+        )
+        }),
+      content = function(file) {
+        write.table(dados_filtrados(), file, sep = ";", row.names = FALSE, fileEncoding = "UTF-8")
+      }
+    )
+  ),
+  conditionalPanel(
+    condition = "input.selectArquivo == 'XLSX'",
+    downloadHandler(
+      filename = reactive({
+        case_when(
+          input$selectNivel == "Nacional" ~ paste0("obitos_fetais_neonatais_", janitor::make_clean_names(input$selectNivel), input$selectAno, ".xlsx"),
+          input$selectNivel == "Estadual" ~ paste0("obitos_fetais_neonatais_", janitor::make_clean_names(input$selectEstado), input$selectAno, ".xlsx"),
+          input$selectNivel == "Municipal" ~
+            paste0("obitos_fetais_neonatais_", janitor::make_clean_names(gsub(" ", "_", gsub(" - ", " ", input$selectMunicipio))), input$selectAno, ".xlsx")
+        )
+        }),
+      content = function(file) {
+        write.xlsx(dados_filtrados(), file, sep = ";", row.names = FALSE, fileEncoding = "UTF-8")
+      }
+    )
+  )
+)
+
+dados_filtrados <- reactive({
+  if (input$selectNivel == "Municipal") {
+    req(input$selectEstadoMuni)
+  }
+  if (input$selectNivel == "Nacional") {
+    if (length(input$selectRegiao) == 5) {
+      dados_obitos_fetais_neonatais |>
+        filter(
+          ano == input$selectAno,
+          tipo_do_obito == input$selectTipo,
+          faixa_de_peso %in% input$selectPeso
+        ) |>
+        mutate(regiao = "Todas") |>
+        group_by(ano, regiao, causabas_grupo, capitulo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+        summarise(obitos = sum(as.numeric(obitos))) |>
+        ungroup()
+    } else {
+      dados_obitos_fetais_neonatais |>
+        filter(
+          ano == input$selectAno,
+          regiao %in% input$selectRegiao,
+          tipo_do_obito == input$selectTipo,
+          faixa_de_peso %in% input$selectPeso
+        ) |>
+        group_by(regiao, ano, causabas_grupo, capitulo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+        summarise(obitos = sum(as.numeric(obitos))) |>
+        ungroup()
+    }
+  } else if (input$selectNivel == "Estadual") {
+    dados_obitos_fetais_neonatais |>
+      filter(
+        ano == input$selectAno,
+        uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstado)]),
+        tipo_do_obito == input$selectTipo,
+        faixa_de_peso %in% input$selectPeso
+      ) |>
+      group_by(uf, regiao, ano, causabas_grupo, capitulo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      summarise(obitos = sum(as.numeric(obitos))) |>
+      ungroup() 
+  } else if (input$selectNivel == "Municipal") {
+    dados_obitos_fetais_neonatais |>
+      filter(
+        ano == input$selectAno,
+        municipio == input$selectMunicipio,
+        uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuni)]),
+        tipo_do_obito == input$selectTipo,
+        faixa_de_peso %in% input$selectPeso
+      ) |>
+      group_by(municipio, uf, regiao, ano, causabas_grupo, capitulo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      summarise(obitos = sum(as.numeric(obitos))) |>
+      ungroup()
+  }
+})
+
+nome_tabela <- reactive({
+    case_when(
+    input$selectTipo == "Fetal" ~ "fetais",
+    input$selectTipo == "Neonatal" ~ "neonatais",
+    input$selectTipo == "Pós-neonatal" ~ "pós-neonatais"
+  ) 
+})
+
+```
+
+<!-- ***** -->
+
+<!-- Essa tabela contém o número total de óbitos maternos contabilizados pelo Ministério da Saúde. O local de registro dos óbitos é referente ao município de residência da falecida. -->
+
+<!-- ***** -->
+
+<!-- Um óbito de gestantes ou puérperas é considerado como um óbito materno quando a categoria da CID10 referente à causa de morte é uma das categorias que se encontram <a href = https://docs.google.com/spreadsheets/d/1zudXPWVp5Duyj9-Ls1uHE0Kmbuu1wUz8/edit?usp=sharing&ouid=110583142066553428517&rtpof=true&sd=true target = _blank> neste arquivo </a>.  -->
+
+<!-- É considerado que um óbito materno ocorreu durante a gravidez, parto ou aborto quando os valores das variáveis  `OBITOGRAV` e `OBITOPUERP`, da base de dados do `SIM`, são, respectivamente, `1` e `3` ou `1` e `9`.  -->
+
+<!-- Óbitos maternos que ocorreram durante o puerpério, até 42 dias após o parto, são aqueles em que os valores das variáveis `OBITOGRAV` e `OBITOPUERP` são, respectivamente, `2` e `1` ou `9` e `1`, enquanto os óbitos que ocorreram durante o puerpério, entre 43 dias e menos de um ano após o parto, são aqueles em que os valores dessas variáveis são, respectivamente, `2` e `2` ou `9` e `2`.  -->
+
+<!-- Óbitos maternos que não ocorreram durante a gravidez ou puerpério são aqueles em que os valores de `OBITOGRAV` e `OBITOPUERP` são, respectivamente, `2` e `3`, `2` e `9` ou `9` e `3`. -->
+
+<!-- Óbitos maternos cujo período de ocorrência é não informado ou ignorado são aqueles em que os valores de `OBITOGRAV` e `OBITOPUERP` são, respectivamente, `9` e `9`. -->
+
+<!-- Por fim, óbitos maternos cujo período de ocorrência é inconsistente são aqueles em que os valores de `OBITOGRAV` e `OBITOPUERP` são, respectivamente, `1` e `1` ou `1` e `2`. -->
+
+<!-- A coluna "Investigação por CMM" indica se os óbitos foram, ou não, investigados por um Comitê de Morte Materna. É considerado que um óbito foi investigado por um Comitê de Morte Materna se o valor da variável `FONTEINV`, do SIM, for `1`. -->
+
+Row 
+-------------------------------------
+   
+### <span style = 'font-weight: 700; color: black'>Tabela de óbitos `r reactive(nome_tabela())`</span>
+
+```{r tabela_om}
+dados_tabela <- reactive({
+  if (input$selectNivel == "Nacional") {
+    dados_filtrados() |>
+      select(!c(ano, regiao, tipo_do_obito))
+  } else if (input$selectNivel == "Estadual") {
+    dados_filtrados() |>
+      select(!c(uf, regiao, ano, tipo_do_obito))
+  } else if (input$selectNivel == "Municipal") {
+    dados_filtrados() |>
+      select(!c(municipio, uf, regiao, ano, tipo_do_obito))
+  }
+})
+
+
+renderReactable({
+  validate(
+    need(nrow(dados_tabela()) != 0, message = "Não existem registros de óbitos fetais ou neonatais para os filtros selecionados.")
+  )
+  if (nrow(dados_tabela()) > 0) {
+    dados_tabela() |>
+      reactable(
+        groupBy = c("causabas_grupo", "capitulo_cid10", "causabas_categoria"),
+        columns = list(
+          causabas_grupo = colDef(
+            name = "Grupo CID10",
+            aggregate = "unique",
+            footer = "Total"
+          ),
+          capitulo_cid10 = colDef(
+            name = "Capítulo CID10",
+            aggregate = JS("function() { return ''}"),
+            format = list(aggregated = colFormat(prefix = "Todos"))
+          ),
+          causabas_categoria = colDef(
+            name = "Categoria CID10",
+            aggregate = JS("function() { return ''}"),
+            format = list(aggregated = colFormat(prefix = "Todas"))
+          ),
+          faixa_de_peso = colDef(
+            name = "Faixa de peso",
+            aggregate = JS("function() { return ''}"),
+            format = list(aggregated = colFormat(prefix = "Todas"))
+          ),
+          obitos = colDef(
+            name = "Nº de óbitos",
+            aggregate = "sum",
+            footer = JS(
+              "function(colInfo) {
+                let obitosTotais = 0
+                colInfo.data.forEach(function(row) {
+                  obitosTotais += row['obitos']
+                })
+                return obitosTotais
+              }"
+            )
+          )
+        ),
+        defaultSorted = c("causabas_grupo", "capitulo_cid10", "causabas_categoria"),
+        searchable = TRUE,
+        sortable = TRUE,
+        resizable = TRUE,
+        filterable = TRUE,
+        highlight = TRUE,
+        striped = TRUE,
+        bordered = FALSE,
+        pagination = FALSE,
+        defaultColDef = colDef(footerStyle = list(fontWeight = "bold")),
+        rowStyle = JS(
+          "function(rowInfo) {
+          if (rowInfo.aggregated === true) {
+           return { fontWeight: 700 }
+          }
+        }"
+        )
+      )
+  }
+})
+
+
+```   
+
+
+
+
