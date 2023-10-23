@@ -31,19 +31,26 @@ df_fetais_aux1 <- fetch_datasus(
   year_start = 2012,
   year_end = 2021,
   information_system = "SIM-DOFET"
-)
+) |>
+  process_sim(municipality_data = TRUE) 
 
-df_fetais_aux2 <- process_sim(df_fetais_aux1, municipality_data = TRUE) 
+df_fetais_aux1$SEMAGESTAC <- as.numeric(df_fetais_aux1$SEMAGESTAC)
+df_fetais_aux1$PESO <- as.numeric(df_fetais_aux1$PESO)
 
 #Selecionando as colunas necessárias e criando algumas variáveis
-df_fetais_aux3 <- df_fetais_aux2 |> 
+df_fetais_aux2 <- df_fetais_aux1 |> 
   select(
     municipio = munResNome, 
     uf = munResUf,
     codigo = CODMUNRES, 
     DTOBITO,
     CAUSABAS, 
-    PESO
+    PESO,
+    GESTACAO,
+    SEMAGESTAC
+  ) |>
+  filter(
+    (SEMAGESTAC >= 22 | (GESTACAO != "Menos de 22 semanas") & !is.na(GESTACAO)) | (is.na(SEMAGESTAC) & is.na(GESTACAO) & PESO > 500)
   ) |>
   mutate(
     ano = substr(DTOBITO, 1, 4),
@@ -66,8 +73,14 @@ df_fetais_aux3 <- df_fetais_aux2 |>
   summarise(obitos = sum(obitos)) |>
   ungroup()
 
+# sum(df_fetais_aux2$obitos[which(df_fetais_aux2$uf == "São Paulo" & df_fetais_aux2$ano == 2020)])  #Tem que dar 4974
+# sum(df_fetais_aux2$obitos[which(df_fetais_aux2$uf == "Espírito Santo" & df_fetais_aux2$ano == 2019)])  #Tem que dar 489
+# sum(df_fetais_aux2$obitos[which(df_fetais_aux2$uf == "Espírito Santo" & df_fetais_aux2$municipio == "Alegre" & df_fetais_aux2$ano == 2020)])  #Tem que dar 4
+# sum(df_fetais_aux2$obitos[which(df_fetais_aux2$uf == "São Paulo" & df_fetais_aux2$municipio == "Bauru" & df_fetais_aux2$ano == 2020)])  #Tem que dar 44
+
+
 #Obtendo um dataframe contendo o nome dos grupos, capítulos e categorias da CID10
-df_nomes_cid10_1 <- data.frame()
+df1_nomes_cid10 <- data.frame()
 params = paste0('{
       "token": {
         "token": "',token,'"
@@ -81,13 +94,13 @@ params = paste0('{
     }')
 
 request <- POST(url = endpoint, body = params, encode = "form")
-df_nomes_cid10_1 <- convertRequestToDF(request)
-names(df_nomes_cid10_1) <- c("CAUSABAS", "causabas_grupo", "capitulo_cid10", "causabas_categoria", "obitos")
+df1_nomes_cid10 <- convertRequestToDF(request)
+names(df1_nomes_cid10) <- c("CAUSABAS", "causabas_grupo", "capitulo_cid10", "causabas_categoria", "obitos")
 
-df_nomes_cid10_1 <- df_nomes_cid10_1 |>
+df1_nomes_cid10 <- df1_nomes_cid10 |>
   select(!obitos)
 
-df_nomes_cid10_2 <- data.frame()
+df2_nomes_cid10 <- data.frame()
 params = paste0('{
       "token": {
         "token": "',token,'"
@@ -101,15 +114,15 @@ params = paste0('{
     }')
 
 request <- POST(url = endpoint, body = params, encode = "form")
-df_nomes_cid10_2 <- convertRequestToDF(request)
-names(df_nomes_cid10_2) <- c("CAUSABAS", "causabas_grupo", "capitulo_cid10", "causabas_categoria", "obitos")
+df2_nomes_cid10 <- convertRequestToDF(request)
+names(df2_nomes_cid10) <- c("CAUSABAS", "causabas_grupo", "capitulo_cid10", "causabas_categoria", "obitos")
 
-df_nomes_cid10_2 <- df_nomes_cid10_2 |>
+df2_nomes_cid10 <- df2_nomes_cid10 |>
   select(!obitos)
 
-df_nomes_cid10 <- full_join(df_nomes_cid10_1, df_nomes_cid10_2)
+df_nomes_cid10 <- full_join(df1_nomes_cid10, df2_nomes_cid10)
 
-df_fetais_aux4 <- left_join(df_fetais_aux3, df_nomes_cid10)
+df_fetais_aux3 <- left_join(df_fetais_aux2, df_nomes_cid10)
 
 #Obtendo um dataframe com as regiões às quais pertencem os estados
 df_regioes <- data.frame()
@@ -133,7 +146,7 @@ df_regioes <- df_regioes |>
   select(!obitos)
 
 #Criando a base final de óbitos fetais
-df_obitos_fetais <- left_join(df_fetais_aux4, df_regioes) |>
+df_obitos_fetais <- left_join(df_fetais_aux3, df_regioes) |>
   select(regiao, uf, municipio, codigo, ano, causabas_grupo, capitulo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso, obitos) |>
   arrange(codigo)
 
@@ -141,7 +154,7 @@ df_obitos_fetais <- left_join(df_fetais_aux4, df_regioes) |>
 write.table(df_obitos_fetais, 'R/databases/dados_obitos_fetais.csv', sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
 
 
-#Óbitos neonatais dos anos de 2012 a 2020
+#Óbitos neonatais dos anos de 2012 a 2021
 estados <- c('RO','AC','AM','RR','PA','AP','TO','MA','PI','CE','RN','PB','PE','AL','SE','BA','MG','ES','RJ','SP','PR','SC','RS','MS','MT','GO','DF')
 
 df_neonatais_aux <- dataframe <- data.frame()
@@ -207,7 +220,8 @@ df_neonatais_aux$obitos <- as.numeric(df_neonatais_aux$obitos)
 df_obitos_neonatais <- df_neonatais_aux |>
   mutate(
     tipo_do_obito = case_when(
-      idade < 228 ~ "Neonatal",
+      idade < 207 ~ "Neonatal precoce",
+      idade >= 207 & idade < 228 ~ "Neonatal tardio",
       idade >= 228 ~ "Pós-neonatal"
     ),
     faixa_de_peso = case_when(
@@ -224,12 +238,11 @@ df_obitos_neonatais <- df_neonatais_aux |>
 ##Exportando os dados 
 write.table(df_obitos_neonatais, 'R/databases/dados_obitos_neonatais.csv', sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
 
-
-#Juntando as bases de óbitos fetais e neonatais
-df_obitos_fetais_neonatais <- rbind(df_obitos_fetais, df_obitos_neonatais)
-
-##Exportando os dados 
-write.table(df_obitos_fetais_neonatais, 'R/databases/dados_obitos_fetais_neonatais.csv', sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
+# #Juntando as bases de óbitos fetais e neonatais
+# df_obitos_fetais_neonatais <- rbind(df_obitos_fetais, df_obitos_neonatais)
+# 
+# ##Exportando os dados 
+# write.table(df_obitos_fetais_neonatais, 'R/databases/dados_obitos_fetais_neonatais.csv', sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
 
 
 

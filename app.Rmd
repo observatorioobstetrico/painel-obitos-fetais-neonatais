@@ -65,17 +65,22 @@ library(openxlsx)
 
 
 #Carregando os arquivos necessários
-dados_obitos_fetais <- read_delim("R/databases/dados_obitos_fetais.csv", 
-                                    delim = ",", escape_double = FALSE, trim_ws = TRUE) 
-
-dados_obitos_neonatais <- read_delim("R/databases/dados_obitos_neonatais.csv", 
-                                    delim = ",", escape_double = FALSE, trim_ws = TRUE) 
-
-
-dados_obitos_fetais_neonatais <- rbind(dados_obitos_fetais, dados_obitos_neonatais) 
-
-tabela_aux_municipios <- read_delim("tabela_auxiliar_municipios.csv", 
+tabela_aux_municipios <- read_delim("R/databases/tabela_auxiliar_municipios.csv", 
                                               delim = ",", escape_double = FALSE, trim_ws = TRUE) 
+
+dados_obitos_fetais <- read.csv("R/databases/dados_obitos_fetais.csv") 
+
+dados_obitos_neonatais <- read.csv("R/databases/dados_obitos_neonatais.csv") |>
+  rename(sigla_uf = uf) |>
+  left_join(tabela_aux_municipios |> select(codigo = codmunres, uf))
+
+dados_obitos_fetais_neonatais <- full_join(dados_obitos_fetais, dados_obitos_neonatais) |>
+  arrange(codigo)
+
+dados_obitos_fetais_neonatais$faixa_de_peso <- factor(
+  dados_obitos_fetais_neonatais$faixa_de_peso,
+  levels = c("< 1500 g", "1500 a 1999 g","2000 a 2499 g", "≥ 2500 g", "Sem informação")
+)
 
 estadosChoices <- sort(unique(tabela_aux_municipios$uf))
 
@@ -162,7 +167,7 @@ options(reactable.theme = reactableTheme(
 <!-- Óbitos maternos oficiais {data-navmenu="Visualizações"} -->
 <!-- ========================================================= -->
 
-Óbitos fetais, neonatais e pós-neonatais {data-navmenu="Visualizações"}
+Óbitos fetais e neonatais {data-navmenu="Visualizações"}
 =========================================================
 
 Inputs {.sidebar data-width=350 style="width: 350px; visibility: visible; top: 75px;"}
@@ -171,12 +176,12 @@ Inputs {.sidebar data-width=350 style="width: 350px; visibility: visible; top: 7
 # hr();h5(span("Óbitos maternos oficiais", style = "font-weight: bold;")); hr()
 # p(em("Obs.: os dados de 2022 são preliminares."))
 
-hr();h5(span("Óbitos fetais, neonatais e pós-neonatais", style = "font-weight: bold;")); hr()
+hr();h5(span("Óbitos fetais e neonatais", style = "font-weight: bold;")); hr()
 
 selectInput(
   inputId = "selectTipo",
   label = HTML("<span class = 'negrito'> Selecione o tipo de óbito: </span>"),
-  choices = sort(unique(dados_obitos_fetais_neonatais$tipo_do_obito))
+  choices = c("Fetal", "Neonatal precoce", "Neonatal tardio", "Neonatal", "Pós-neonatal")
 )
 
 hr()
@@ -237,11 +242,9 @@ conditionalPanel(
 observeEvent(input$selectEstadoMuni, {
   updateSelectizeInput(
     inputId = "selectMunicipio",
-    choices = sort(tabela_aux_municipios |> dplyr::filter(uf == input$selectEstadoMuni) |> pull(municipio) |> unique())
+    choices = sort(dados_obitos_fetais_neonatais |> dplyr::filter(uf == input$selectEstadoMuni) |> pull(municipio) |> unique())
   )
 })
-
-
 
 hr()
 span("Características do feto ou neonato", style = "font-weight: bold; font-size: 17px")
@@ -315,8 +318,13 @@ dados_filtrados <- reactive({
       dados_obitos_fetais_neonatais |>
         filter(
           ano == input$selectAno,
-          tipo_do_obito == input$selectTipo,
           faixa_de_peso %in% input$selectPeso
+        ) |>
+        filter(
+          if (input$selectTipo == "Neonatal") 
+            tipo_do_obito %in% c("Neonatal precoce", "Neonatal tardio")
+          else 
+            tipo_do_obito == input$selectTipo
         ) |>
         mutate(regiao = "Todas") |>
         group_by(ano, regiao, causabas_grupo, capitulo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
@@ -327,8 +335,13 @@ dados_filtrados <- reactive({
         filter(
           ano == input$selectAno,
           regiao %in% input$selectRegiao,
-          tipo_do_obito == input$selectTipo,
           faixa_de_peso %in% input$selectPeso
+        ) |>
+        filter(
+          if (input$selectTipo == "Neonatal") 
+            tipo_do_obito %in% c("Neonatal precoce", "Neonatal tardio")
+          else 
+            tipo_do_obito == input$selectTipo
         ) |>
         group_by(regiao, ano, causabas_grupo, capitulo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
         summarise(obitos = sum(as.numeric(obitos))) |>
@@ -338,9 +351,14 @@ dados_filtrados <- reactive({
     dados_obitos_fetais_neonatais |>
       filter(
         ano == input$selectAno,
-        uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstado)]),
-        tipo_do_obito == input$selectTipo,
+        uf == input$selectEstado | sigla_uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstado)]),
         faixa_de_peso %in% input$selectPeso
+      ) |>
+      filter(
+        if (input$selectTipo == "Neonatal") 
+          tipo_do_obito %in% c("Neonatal precoce", "Neonatal tardio")
+        else 
+          tipo_do_obito == input$selectTipo
       ) |>
       group_by(uf, regiao, ano, causabas_grupo, capitulo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
       summarise(obitos = sum(as.numeric(obitos))) |>
@@ -349,10 +367,15 @@ dados_filtrados <- reactive({
     dados_obitos_fetais_neonatais |>
       filter(
         ano == input$selectAno,
+        uf == input$selectEstadoMuni | sigla_uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuni)]),
         municipio == input$selectMunicipio,
-        uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuni)]),
-        tipo_do_obito == input$selectTipo,
         faixa_de_peso %in% input$selectPeso
+      ) |>
+      filter(
+        if (input$selectTipo == "Neonatal") 
+          tipo_do_obito %in% c("Neonatal precoce", "Neonatal tardio")
+        else 
+          tipo_do_obito == input$selectTipo
       ) |>
       group_by(municipio, uf, regiao, ano, causabas_grupo, capitulo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
       summarise(obitos = sum(as.numeric(obitos))) |>
@@ -363,6 +386,8 @@ dados_filtrados <- reactive({
 nome_tabela <- reactive({
     case_when(
     input$selectTipo == "Fetal" ~ "fetais",
+    input$selectTipo == "Neonatal precoce" ~ "neonatais precoces",
+    input$selectTipo == "Neonatal tardio" ~ "neonatais tardios",
     input$selectTipo == "Neonatal" ~ "neonatais",
     input$selectTipo == "Pós-neonatal" ~ "pós-neonatais"
   ) 
@@ -412,7 +437,7 @@ dados_tabela <- reactive({
 
 renderReactable({
   validate(
-    need(nrow(dados_tabela()) != 0, message = "Não existem registros de óbitos fetais ou neonatais para os filtros selecionados.")
+    need(nrow(dados_tabela()) != 0, message = glue::glue("Não existem registros de óbitos {nome_tabela()} para os filtros selecionados."))
   )
   if (nrow(dados_tabela()) > 0) {
     dados_tabela() |>
