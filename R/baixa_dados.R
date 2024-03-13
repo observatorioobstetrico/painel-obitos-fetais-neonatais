@@ -48,7 +48,7 @@ df_fetais <- df_sim_dofet_aux |>
   ungroup()
 
 ##Exportando os dados 
-write.table(df_fetais, 'R/databases/dados_obitos_fetais.csv', sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
+write.table(df_fetais, gzfile('R/databases/dados_obitos_fetais.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
 
 
 # Para os óbitos neonatais: baixando os dados do SIM de 2012 a 2022
@@ -93,7 +93,7 @@ df_neonatais <- df_sim_aux |>
   ungroup()
 
 ## Exportando os dados 
-write.table(df_neonatais, 'R/databases/dados_obitos_neonatais.csv', sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
+write.table(df_neonatais, gzfile('R/databases/dados_obitos_neonatais.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
 
 # #Juntando as bases de óbitos fetais e neonatais
 # df_obitos_fetais_neonatais <- rbind(df_obitos_fetais, df_obitos_neonatais)
