@@ -68,11 +68,9 @@ library(openxlsx)
 tabela_aux_municipios <- read_delim("R/databases/tabela_auxiliar_municipios.csv", 
                                               delim = ",", escape_double = FALSE, trim_ws = TRUE) 
 
-dados_obitos_fetais <- read.csv("R/databases/dados_obitos_fetais.csv") 
+dados_obitos_fetais <- read.csv(gzfile("R/databases/dados_obitos_fetais.csv.gz")) 
 
-dados_obitos_neonatais <- read.csv("R/databases/dados_obitos_neonatais.csv") |>
-  rename(sigla_uf = uf) |>
-  left_join(tabela_aux_municipios |> select(codigo = codmunres, uf))
+dados_obitos_neonatais <- read.csv(gzfile("R/databases/dados_obitos_neonatais.csv.gz")) 
 
 dados_obitos_fetais_neonatais <- full_join(dados_obitos_fetais, dados_obitos_neonatais) |>
   arrange(codigo)
@@ -94,78 +92,65 @@ options(reactable.theme = reactableTheme(
 ))
 ```
 
-<!-- Sobre -->
-<!-- ============================================= -->
+Sobre
+=============================================
 
 
-<!-- <h3><span style = "font-weight: bold;">O OOBr Óbitos Fetais e Neonatais</span></h3> -->
+<h3><span style = "font-weight: bold;">O OOBr Óbitos Fetais e Neonatais</span></h3>
 
-<!-- É um painel de visualização dinâmico com análises acerca da mortalidade de fetos e neonatos no Brasil, sob a perspectiva de algumas variáveis da base de dados do Sistema de Informações sobre Mortalidade (SIM). As informações consideradas são referentes aos registros de óbitos de fetos e neonatos dos anos de 1996 a 2022.  -->
+É um painel de visualização dinâmico com análises acerca da mortalidade de fetos e neonatos no Brasil, sob a perspectiva de algumas variáveis da base de dados do Sistema de Informações sobre Mortalidade (SIM). As informações consideradas são referentes aos registros de óbitos de fetos e neonatos dos anos de 1996 a 2022.
 
-<!-- <h3><span style = "font-weight: bold;">O Observatório Obstétrico Brasileiro (OOBr)</span></h3> -->
+<h3><span style = "font-weight: bold;">Os dados</span></h3>
 
-<!-- Tem como objetivo disponibilizar plataformas interativas de monitoramento e análises de dados públicos cientificamente embasadas e disseminar informações de qualidade e relevantes acerca da área da saúde materno-infantil. -->
+São providos do DATASUS do Ministério da Saúde e formam um grande banco anual composto por todos os registros das declarações de óbitos (o SIM), que está disponível a partir do ano de 1996 e que tem dados consolidados disponíveis até o ano de 2022.
 
-<!-- Conta com **pesquisadores** da <a href = https://www.ufes.br target = _blank> Universidade Federal do Espírito Santo (UFES) </a> e da <a href = https://www5.usp.br target = _blank> Universidade de São Paulo (USP)</a>. Para maiores informações, veja o <a href = https://observatorioobstetricobr.org/ target = _blank> site do OOBr</a>. -->
+<h3><span style = "font-weight: bold;">Contato</span></h3>
 
-<!-- <h3><span style = "font-weight: bold;">Os dados</span></h3> -->
+Para comentários, sugestões e colaborações científicas, por favor, envie uma mensagem para <a href="mailto:comunicacao@observatorioobstetricobr.org"> comunicacao@observatorioobstetricobr.org</a>. E para acompanhar o trabalho do OOBr de perto, siga-o nas redes acessando os ícones do canto superior direito.  
 
-<!-- <<<<<<< HEAD -->
-<!-- São providos do DATASUS do Ministério da Saúde e formam um grande banco anual composto por todos os registros das declarações de óbitos a partir do ano de 1996. Nessa plataforma, os dados do SIM são previamente tratados pela PCDaS com base no fluxo ETL (_Extract_, _Transform_ e _Load_). Atualmente, a PCDaS disponibiliza dados do SIM até 2022 **(sendo estes preliminares)**, atualizados na última sexta feira de cada mês, tendo a última atualização ocorrido em 08 de outubro de 2023. -->
+<h3><span style = "font-weight: bold;">Realização</span></h3>
 
-<!-- <h3><span style = "font-weight: bold;">Como citar esse painel</span></h3> -->
+<center>
+```{r, out.width="10%", fig.show='hold'}
+knitr::include_graphics(c(
+  "www/logos/realizacao/logo_oobr.png",
+  "www/logos/realizacao/logo_ufes.png",
+  "www/logos/realizacao/logo_medicina_usp.png", 
+  "www/logos/realizacao/logo_daslab.png"
+))
+```
+</center>
 
-<!-- Observatório Obstétrico Brasileiro. OOBr Óbitos de Gestantes e Puérperas, 2022. Disponível em  https://observatorioobstetrico.shinyapps.io/obitos-grav-puerp. DOI: https://doi.org/10.7303/syn44144271. -->
+<h3><span style = "font-weight: bold;">Financiadores</span></h3>
 
-<!-- <h3><span style = "font-weight: bold;">Contato</span></h3> -->
-
-<!-- Para comentários, sugestões e colaborações científicas, por favor, envie uma mensagem para <a href="mailto:comunicacao@observatorioobstetricobr.org"> comunicacao@observatorioobstetricobr.org</a>. E para acompanhar o trabalho do OOBr de perto, siga-o nas redes acessando os ícones do canto superior direito.   -->
-
-<!-- <h3><span style = "font-weight: bold;">Realização</span></h3> -->
-
-<!-- <center> -->
-<!-- ```{r, out.width="10%", fig.show='hold'} -->
-<!-- knitr::include_graphics(c( -->
-<!--   "www/logos/realizacao/logo_oobr.png", -->
-<!--   "www/logos/realizacao/logo_ufes.png", -->
-<!--   "www/logos/realizacao/logo_medicina_usp.png",  -->
-<!--   "www/logos/realizacao/logo_daslab.png" -->
-<!-- )) -->
-<!-- ``` -->
-<!-- </center> -->
-
-<!-- <h3><span style = "font-weight: bold;">Financiadores</span></h3> -->
-
-<!-- <center> -->
-<!-- ```{r, teste, out.width="10%", fig.show='hold'} -->
-<!-- knitr::include_graphics(c( -->
-<!--   "www/logos/financiadores/logo_bill_melinda.png", -->
-<!--   "www/logos/financiadores/logo_cnpq.png", -->
-<!--   "www/logos/financiadores/logo_ms1.png",  -->
-<!--   "www/logos/financiadores/logo_ms2.png",  -->
-<!--   "www/logos/financiadores/logo_ms3.png",  -->
-<!--   "www/logos/financiadores/logo_fapes.png", -->
-<!--   "www/logos/financiadores/logo_fapes2.png" -->
-<!-- )) -->
-<!-- ``` -->
-<!-- </center> -->
+<center>
+```{r, teste, out.width="10%", fig.show='hold'}
+knitr::include_graphics(c(
+  "www/logos/financiadores/logo_bill_melinda.png",
+  "www/logos/financiadores/logo_cnpq.png",
+  "www/logos/financiadores/logo_ms1.png", 
+  "www/logos/financiadores/logo_ms2.png", 
+  "www/logos/financiadores/logo_ms3.png", 
+  "www/logos/financiadores/logo_fapes.png",
+  "www/logos/financiadores/logo_fapes2.png"
+))
+```
+</center>
 
 
-<!-- <h3><span style = "font-weight: bold;">Apoio</span></h3> -->
+<h3><span style = "font-weight: bold;">Apoio</span></h3>
 
-<!-- <center> -->
-<!-- ```{r, out.width="8%", fig.show='hold'} -->
-<!-- knitr::include_graphics(c( -->
-<!--   "www/logos/apoio/logo_pcdas.png", -->
-<!--   "www/logos/apoio/logo_odd.png" -->
-<!-- )) -->
-<!-- ``` -->
-<!-- </center> -->
+<center>
+```{r, out.width="8%", fig.show='hold'}
+knitr::include_graphics(c(
+  "www/logos/apoio/logo_pcdas.png",
+  "www/logos/apoio/logo_odd.png"
+))
+```
+</center>
 
 
 
-<!-- Óbitos maternos oficiais {data-navmenu="Visualizações"} -->
-<!-- ========================================================= -->
 
 Óbitos fetais e neonatais {data-navmenu="Visualizações"}
 =========================================================
@@ -280,14 +265,14 @@ conditionalPanel(
     downloadHandler(
       filename = reactive({
         case_when(
-          input$selectNivel == "Nacional" ~ paste0("obitos_fetais_neonatais_", janitor::make_clean_names(input$selectNivel), input$selectAno, ".csv"),
-          input$selectNivel == "Estadual" ~ paste0("obitos_fetais_neonatais_", janitor::make_clean_names(input$selectEstado), input$selectAno, ".csv"),
+          input$selectNivel == "Nacional" ~ paste0(glue::glue("obitos_{nome_tabela()}_"), janitor::make_clean_names(input$selectNivel), input$selectAno, ".csv"),
+          input$selectNivel == "Estadual" ~ paste0(glue::glue("obitos_{nome_tabela()}_"), janitor::make_clean_names(input$selectEstado), input$selectAno, ".csv"),
           input$selectNivel == "Municipal" ~
-            paste0("obitos_fetais_neonatais_", janitor::make_clean_names(gsub(" ", "_", gsub(" - ", " ", input$selectMunicipio))), input$selectAno, ".csv")
+            paste0(glue::glue("obitos_{nome_tabela()}_"), janitor::make_clean_names(gsub(" ", "_", gsub(" - ", " ", input$selectMunicipio))), input$selectAno, ".csv")
         )
         }),
       content = function(file) {
-        write.table(dados_filtrados(), file, sep = ";", row.names = FALSE, fileEncoding = "UTF-8")
+        write.table(dados_download(), file, sep = ";", row.names = FALSE, fileEncoding = "UTF-8")
       }
     )
   ),
@@ -296,57 +281,40 @@ conditionalPanel(
     downloadHandler(
       filename = reactive({
         case_when(
-          input$selectNivel == "Nacional" ~ paste0("obitos_fetais_neonatais_", janitor::make_clean_names(input$selectNivel), input$selectAno, ".xlsx"),
-          input$selectNivel == "Estadual" ~ paste0("obitos_fetais_neonatais_", janitor::make_clean_names(input$selectEstado), input$selectAno, ".xlsx"),
+          input$selectNivel == "Nacional" ~ paste0(glue::glue("obitos_{nome_tabela()}_"), janitor::make_clean_names(input$selectNivel), input$selectAno, ".xlsx"),
+          input$selectNivel == "Estadual" ~ paste0(glue::glue("obitos_{nome_tabela()}_"), janitor::make_clean_names(input$selectEstado), input$selectAno, ".xlsx"),
           input$selectNivel == "Municipal" ~
-            paste0("obitos_fetais_neonatais_", janitor::make_clean_names(gsub(" ", "_", gsub(" - ", " ", input$selectMunicipio))), input$selectAno, ".xlsx")
+            paste0(glue::glue("obitos_{nome_tabela()}_"), janitor::make_clean_names(gsub(" ", "_", gsub(" - ", " ", input$selectMunicipio))), input$selectAno, ".xlsx")
         )
         }),
       content = function(file) {
-        write.xlsx(dados_filtrados(), file, sep = ";", row.names = FALSE, fileEncoding = "UTF-8")
+        write.xlsx(dados_download(), file, sep = ";", row.names = FALSE, fileEncoding = "UTF-8")
       }
     )
   )
 )
+
 
 dados_filtrados <- reactive({
   if (input$selectNivel == "Municipal") {
     req(input$selectEstadoMuni)
   }
   if (input$selectNivel == "Nacional") {
-    if (length(input$selectRegiao) == 5) {
-      dados_obitos_fetais_neonatais |>
-        filter(
-          ano == input$selectAno,
-          faixa_de_peso %in% input$selectPeso
-        ) |>
-        filter(
-          if (input$selectTipo == "Neonatal") 
-            tipo_do_obito %in% c("Neonatal precoce", "Neonatal tardio")
-          else 
-            tipo_do_obito == input$selectTipo
-        ) |>
-        mutate(regiao = "Todas") |>
-        group_by(ano, regiao, causabas_grupo, capitulo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
-        summarise(obitos = sum(as.numeric(obitos))) |>
-        ungroup()
-    } else {
-      dados_obitos_fetais_neonatais |>
-        filter(
-          ano == input$selectAno,
-          regiao %in% input$selectRegiao,
-          faixa_de_peso %in% input$selectPeso
-        ) |>
-        filter(
-          if (input$selectTipo == "Neonatal") 
-            tipo_do_obito %in% c("Neonatal precoce", "Neonatal tardio")
-          else 
-            tipo_do_obito == input$selectTipo
-        ) |>
-        group_by(regiao, ano, causabas_grupo, capitulo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
-        summarise(obitos = sum(as.numeric(obitos))) |>
-        ungroup()
-    }
+    dados_obitos_fetais_neonatais |>
+      filter(
+        ano == input$selectAno,
+        regiao %in% input$selectRegiao,
+        faixa_de_peso %in% input$selectPeso
+      ) |>
+      filter(
+        if (input$selectTipo == "Neonatal") 
+          tipo_do_obito %in% c("Neonatal precoce", "Neonatal tardio")
+        else 
+          tipo_do_obito == input$selectTipo
+      ) |>
+      group_by(regiao, ano, capitulo_cid10, grupo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      summarise(obitos = sum(as.numeric(obitos))) |>
+      ungroup()
   } else if (input$selectNivel == "Estadual") {
     dados_obitos_fetais_neonatais |>
       filter(
@@ -360,7 +328,7 @@ dados_filtrados <- reactive({
         else 
           tipo_do_obito == input$selectTipo
       ) |>
-      group_by(uf, regiao, ano, causabas_grupo, capitulo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      group_by(uf, regiao, ano, capitulo_cid10, grupo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup() 
   } else if (input$selectNivel == "Municipal") {
@@ -377,10 +345,28 @@ dados_filtrados <- reactive({
         else 
           tipo_do_obito == input$selectTipo
       ) |>
-      group_by(municipio, uf, regiao, ano, causabas_grupo, capitulo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      group_by(municipio, uf, regiao, ano, capitulo_cid10, grupo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup()
   }
+})
+
+dados_download <- reactive({
+  req(input$selectEstadoMuni)
+  if (input$selectTipo == "Neonatal") {
+    dados_filtrados() |>
+      mutate(
+        tipo_do_obito = "Neonatal"
+      )
+  } else {
+    dados_filtrados()
+  }
+})
+
+observe({
+  req(input$selectEstadoMuni)
+  print(dados_download())
+  print(names(dados_download()))
 })
 
 nome_tabela <- reactive({
@@ -395,9 +381,12 @@ nome_tabela <- reactive({
 
 ```
 
-<!-- ***** -->
+*****
 
-<!-- Essa tabela contém o número total de óbitos maternos contabilizados pelo Ministério da Saúde. O local de registro dos óbitos é referente ao município de residência da falecida. -->
+Neste painel, um óbito foi considerado fetal caso tenha sido registrado no SIM-DOFET com idade gestacional igual ou superior a 22 semanas (`((GESTACAO != "Menos de 22 semanas" & !is.na(GESTACAO)) | (SEMAGESTAC >= 22 & SEMAGESTAC != 99))`) ou com peso igual ou superior a 500 g (`PESO >= 500`). O valor `99` da variável `SEMAGESTAC` foi considerado como um valor faltante.
+
+
+
 
 <!-- ***** -->
 
@@ -442,15 +431,14 @@ renderReactable({
   if (nrow(dados_tabela()) > 0) {
     dados_tabela() |>
       reactable(
-        groupBy = c("causabas_grupo", "capitulo_cid10", "causabas_categoria"),
+        groupBy = c("capitulo_cid10", "grupo_cid10", "causabas_categoria"),
         columns = list(
-          causabas_grupo = colDef(
-            name = "Grupo CID10",
-            aggregate = "unique",
-            footer = "Total"
-          ),
           capitulo_cid10 = colDef(
             name = "Capítulo CID10",
+            footer = "Total"
+          ),
+          grupo_cid10 = colDef(
+            name = "Grupo CID10",
             aggregate = JS("function() { return ''}"),
             format = list(aggregated = colFormat(prefix = "Todos"))
           ),
@@ -478,7 +466,7 @@ renderReactable({
             )
           )
         ),
-        defaultSorted = c("causabas_grupo", "capitulo_cid10", "causabas_categoria"),
+        defaultSorted = c("grupo_cid10", "capitulo_cid10", "causabas_categoria"),
         searchable = TRUE,
         sortable = TRUE,
         resizable = TRUE,
