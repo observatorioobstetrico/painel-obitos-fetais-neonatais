@@ -11,12 +11,11 @@ df_aux_municipios <- read.csv("R/databases/df_aux_municipios.csv") |>
 
 # Baixando os dados preliminares do SIM de 2023
 download.file("https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SIM/Mortalidade_Geral_2023.csv", "R/databases/DO23OPEN.csv", mode = "wb")
-write.csv2(read.csv2("R/databases/DO23OPEN.csv"), gzfile("R/databases/DO23OPEN.csv.gz"), row.names = FALSE)
-file.remove("R/databases/DO23OPEN.csv")
 
-df_sim_preliminares <- read.csv2(gzfile("R/databases/DO23OPEN.csv.gz")) |>
+df_sim_preliminares <- read.csv2("R/databases/DO23OPEN.csv") |>
   clean_names()
 
+file.remove("R/databases/DO23OPEN.csv")
 
 # Para os óbitos fetais ---------------------------------------------------
 ## Criando a variável de ano, limitando a variável 'causabas' a três caracteres e filtrando apenas pelos óbitos fetais que consideramos
