@@ -30,7 +30,7 @@ df_fetais <- df_sim_dofet_aux |>
     ((gestacao != "1" & !is.na(gestacao) & gestacao != "9") | (semagestac >= 22 & semagestac != 99)) | (peso >= 500)
   ) |>
   mutate(
-    tipo_do_obito = "Fetal",
+    tipo_do_obito = "Fetais",
     faixa_de_peso = case_when(
       is.na(peso) ~ "Sem informação",
       peso < 1500 ~ "< 1500 g",
@@ -48,7 +48,7 @@ df_fetais <- df_sim_dofet_aux |>
   ungroup()
 
 ##Exportando os dados 
-write.table(df_fetais, gzfile('R/databases/dados_obitos_fetais.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
+write.table(df_fetais, gzfile('R/databases/dados_obitos_fetais_2012_2022.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
 
 
 # Para os óbitos neonatais: baixando os dados do SIM de 2012 a 2022
@@ -72,9 +72,9 @@ df_neonatais <- df_sim_aux |>
   ) |>
   mutate(
     tipo_do_obito = case_when(
-      idade < 207 ~ "Neonatal precoce",
-      idade >= 207 & idade < 228 ~ "Neonatal tardio",
-      idade >= 228 ~ "Pós-neonatal"
+      idade < 207 ~ "Neonatais precoces",
+      idade >= 207 & idade < 228 ~ "Neonatais tardios",
+      idade >= 228 ~ "Pós-neonatais"
     ),
     faixa_de_peso = case_when(
       is.na(peso) ~ "Sem informação",
@@ -93,7 +93,7 @@ df_neonatais <- df_sim_aux |>
   ungroup()
 
 ## Exportando os dados 
-write.table(df_neonatais, gzfile('R/databases/dados_obitos_neonatais.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
+write.table(df_neonatais, gzfile('R/databases/dados_obitos_neonatais_2012_2022.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
 
 # #Juntando as bases de óbitos fetais e neonatais
 # df_obitos_fetais_neonatais <- rbind(df_obitos_fetais, df_obitos_neonatais)

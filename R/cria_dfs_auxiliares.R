@@ -80,7 +80,7 @@ for (i in 1:nrow(df_categorias)) {
       if (df_categorias$CAT[i] >= df_grupos$CATINIC[k] & df_categorias$CAT[i] <= df_grupos$CATFIM[k]) {
         df_cid10$CAUSABAS[i] <- df_categorias$CAT[i]
         df_cid10$capitulo_cid10[i] <- df_capitulos$DESCRICAO[j]
-        df_cid10$grupo_cid10[i] <- df_grupos$DESCRICAO[k]
+        df_cid10$grupo_cid10[i] <- glue::glue("({df_grupos$CATINIC[k]}-{df_grupos$CATFIM[k]}) {df_grupos$DESCRICAO[k]}")
         df_cid10$causabas_categoria[i] <- paste(df_categorias$CAT[i], df_categorias$DESCRICAO[i])
         parar <- TRUE
       } else {

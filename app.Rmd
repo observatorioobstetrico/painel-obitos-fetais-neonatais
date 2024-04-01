@@ -68,9 +68,9 @@ library(openxlsx)
 tabela_aux_municipios <- read_delim("R/databases/tabela_auxiliar_municipios.csv", 
                                               delim = ",", escape_double = FALSE, trim_ws = TRUE) 
 
-dados_obitos_fetais <- read.csv(gzfile("R/databases/dados_obitos_fetais.csv.gz")) 
+dados_obitos_fetais <- read.csv(gzfile("dados_oobr_obitos_fetais_2012_2023.csv.gz")) 
 
-dados_obitos_neonatais <- read.csv(gzfile("R/databases/dados_obitos_neonatais.csv.gz")) 
+dados_obitos_neonatais <- read.csv(gzfile("dados_oobr_obitos_neonatais_2012_2023.csv.gz")) 
 
 dados_obitos_fetais_neonatais <- full_join(dados_obitos_fetais, dados_obitos_neonatais) |>
   arrange(codigo)
@@ -95,14 +95,19 @@ options(reactable.theme = reactableTheme(
 Sobre
 =============================================
 
-
 <h3><span style = "font-weight: bold;">O OOBr Óbitos Fetais e Neonatais</span></h3>
 
-É um painel de visualização dinâmico com análises acerca da mortalidade de fetos e neonatos no Brasil, sob a perspectiva de algumas variáveis da base de dados do Sistema de Informações sobre Mortalidade (SIM). As informações consideradas são referentes aos registros de óbitos de fetos e neonatos dos anos de 1996 a 2022.
+É um painel de visualização dinâmico com análises acerca da mortalidade de fetos e neonatos no Brasil, sob a perspectiva de algumas variáveis da base de dados do Sistema de Informações sobre Mortalidade (SIM). As informações consideradas são referentes aos registros de óbitos de fetos e neonatos dos anos de 2012 a 2023 **(sendo os dados de 2023 preliminares)**.
+
+<h3><span style = "font-weight: bold;">O Observatório Obstétrico Brasileiro (OOBr)</span></h3>
+
+Tem como objetivo disponibilizar plataformas interativas de monitoramento e análises de dados públicos cientificamente embasadas e disseminar informações de qualidade e relevantes acerca da área da saúde materno-infantil.
+
+Conta com **pesquisadores** da <a href = https://www.ufes.br target = _blank> Universidade Federal do Espírito Santo (UFES) </a> e da <a href = https://www5.usp.br target = _blank> Universidade de São Paulo (USP)</a>. Para maiores informações, veja o <a href = https://observatorioobstetricobr.org/ target = _blank> site do OOBr</a>.
 
 <h3><span style = "font-weight: bold;">Os dados</span></h3>
 
-São providos do DATASUS do Ministério da Saúde e formam um grande banco anual composto por todos os registros das declarações de óbitos (o SIM), que está disponível a partir do ano de 1996 e que tem dados consolidados disponíveis até o ano de 2022.
+São providos do DATASUS do Ministério da Saúde e formam um grande banco anual composto por todos os registros das declarações de óbitos (o SIM) que está disponível a partir do ano de 1996. Atualmente, os dados do SIM estão disponíveis até 2023 **(sendo estes preliminares)**. Os dados deste painel são atualizados na última sexta feira de cada mês, com a última atualização tendo ocorrido em 31 de março de 2024.
 
 <h3><span style = "font-weight: bold;">Contato</span></h3>
 
@@ -152,21 +157,20 @@ knitr::include_graphics(c(
 
 
 
-Óbitos fetais e neonatais {data-navmenu="Visualizações"}
+Tabelas
 =========================================================
 
 Inputs {.sidebar data-width=350 style="width: 350px; visibility: visible; top: 75px;"}
 ------------------------------------- 
 ```{r input-obitosM}
-# hr();h5(span("Óbitos maternos oficiais", style = "font-weight: bold;")); hr()
-# p(em("Obs.: os dados de 2022 são preliminares."))
-
 hr();h5(span("Óbitos fetais e neonatais", style = "font-weight: bold;")); hr()
+p(em("Obs.: os dados de 2023 são preliminares."))
+hr()
 
 selectInput(
   inputId = "selectTipo",
   label = HTML("<span class = 'negrito'> Selecione o tipo de óbito: </span>"),
-  choices = c("Fetal", "Neonatal precoce", "Neonatal tardio", "Neonatal", "Pós-neonatal")
+  choices = c("Fetais", "Neonatais precoces", "Neonatais tardios", "Neonatais", "Pós-neonatais")
 )
 
 hr()
@@ -307,8 +311,8 @@ dados_filtrados <- reactive({
         faixa_de_peso %in% input$selectPeso
       ) |>
       filter(
-        if (input$selectTipo == "Neonatal") 
-          tipo_do_obito %in% c("Neonatal precoce", "Neonatal tardio")
+        if (input$selectTipo == "Neonatais") 
+          tipo_do_obito %in% c("Neonatais precoces", "Neonatais tardios")
         else 
           tipo_do_obito == input$selectTipo
       ) |>
@@ -323,8 +327,8 @@ dados_filtrados <- reactive({
         faixa_de_peso %in% input$selectPeso
       ) |>
       filter(
-        if (input$selectTipo == "Neonatal") 
-          tipo_do_obito %in% c("Neonatal precoce", "Neonatal tardio")
+        if (input$selectTipo == "Neonatais") 
+          tipo_do_obito %in% c("Neonatais precoces", "Neonatais tardios")
         else 
           tipo_do_obito == input$selectTipo
       ) |>
@@ -340,8 +344,8 @@ dados_filtrados <- reactive({
         faixa_de_peso %in% input$selectPeso
       ) |>
       filter(
-        if (input$selectTipo == "Neonatal") 
-          tipo_do_obito %in% c("Neonatal precoce", "Neonatal tardio")
+        if (input$selectTipo == "Neonatais") 
+          tipo_do_obito %in% c("Neonatais precoces", "Neonatais tardios")
         else 
           tipo_do_obito == input$selectTipo
       ) |>
@@ -353,10 +357,10 @@ dados_filtrados <- reactive({
 
 dados_download <- reactive({
   req(input$selectEstadoMuni)
-  if (input$selectTipo == "Neonatal") {
+  if (input$selectTipo == "Neonatais") {
     dados_filtrados() |>
       mutate(
-        tipo_do_obito = "Neonatal"
+        tipo_do_obito = "Neonatais"
       )
   } else {
     dados_filtrados()
@@ -371,11 +375,11 @@ observe({
 
 nome_tabela <- reactive({
     case_when(
-    input$selectTipo == "Fetal" ~ "fetais",
-    input$selectTipo == "Neonatal precoce" ~ "neonatais precoces",
-    input$selectTipo == "Neonatal tardio" ~ "neonatais tardios",
-    input$selectTipo == "Neonatal" ~ "neonatais",
-    input$selectTipo == "Pós-neonatal" ~ "pós-neonatais"
+    input$selectTipo == "Fetais" ~ "fetais",
+    input$selectTipo == "Neonatais precoces" ~ "neonatais precoces",
+    input$selectTipo == "Neonatais tardios" ~ "neonatais tardios",
+    input$selectTipo == "Neonatais" ~ "neonatais",
+    input$selectTipo == "Pós-neonatais" ~ "pós-neonatais"
   ) 
 })
 

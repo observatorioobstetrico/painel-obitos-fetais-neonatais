@@ -5,9 +5,9 @@ account: observatorioobstetrico
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 10196213
-bundleId: 8363963
+bundleId: 8439311
 url: https://observatorioobstetrico.shinyapps.io/obitos-fetais-neonatais/
-when: 1710262108.38798
-lastSyncTime: 1710262108.38799
+when: 1711937897.09016
+lastSyncTime: 1711937897.09017
 asMultiple: FALSE
 asStatic: FALSE
