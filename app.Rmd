@@ -156,14 +156,13 @@ knitr::include_graphics(c(
 
 
 
-
-Tabelas
+Óbitos por categoria da CID-10 {data-navmenu="Visualizações"}
 =========================================================
 
 Inputs {.sidebar data-width=350 style="width: 350px; visibility: visible; top: 75px;"}
 ------------------------------------- 
 ```{r input-obitosM}
-hr();h5(span("Óbitos fetais e neonatais", style = "font-weight: bold;")); hr()
+hr();h5(span("Óbitos fetais e neonatais por categoria da CID-10", style = "font-weight: bold;")); hr()
 p(em("Obs.: os dados de 2023 são preliminares."))
 hr()
 
@@ -231,7 +230,7 @@ conditionalPanel(
 observeEvent(input$selectEstadoMuni, {
   updateSelectizeInput(
     inputId = "selectMunicipio",
-    choices = sort(dados_obitos_fetais_neonatais |> dplyr::filter(uf == input$selectEstadoMuni) |> pull(municipio) |> unique())
+    choices = sort(dados_obitos_fetais_neonatais |> dplyr::filter(uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuni)])) |> pull(municipio) |> unique())
   )
 })
 
@@ -323,7 +322,7 @@ dados_filtrados <- reactive({
     dados_obitos_fetais_neonatais |>
       filter(
         ano == input$selectAno,
-        uf == input$selectEstado | sigla_uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstado)]),
+        uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstado)]),
         faixa_de_peso %in% input$selectPeso
       ) |>
       filter(
@@ -339,7 +338,7 @@ dados_filtrados <- reactive({
     dados_obitos_fetais_neonatais |>
       filter(
         ano == input$selectAno,
-        uf == input$selectEstadoMuni | sigla_uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuni)]),
+        uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuni)]),
         municipio == input$selectMunicipio,
         faixa_de_peso %in% input$selectPeso
       ) |>
@@ -367,12 +366,6 @@ dados_download <- reactive({
   }
 })
 
-observe({
-  req(input$selectEstadoMuni)
-  print(dados_download())
-  print(names(dados_download()))
-})
-
 nome_tabela <- reactive({
     case_when(
     input$selectTipo == "Fetais" ~ "fetais",
@@ -392,26 +385,10 @@ Neste painel, um óbito foi considerado fetal caso tenha sido registrado no SIM-
 
 
 
-<!-- ***** -->
-
-<!-- Um óbito de gestantes ou puérperas é considerado como um óbito materno quando a categoria da CID10 referente à causa de morte é uma das categorias que se encontram <a href = https://docs.google.com/spreadsheets/d/1zudXPWVp5Duyj9-Ls1uHE0Kmbuu1wUz8/edit?usp=sharing&ouid=110583142066553428517&rtpof=true&sd=true target = _blank> neste arquivo </a>.  -->
-
-<!-- É considerado que um óbito materno ocorreu durante a gravidez, parto ou aborto quando os valores das variáveis  `OBITOGRAV` e `OBITOPUERP`, da base de dados do `SIM`, são, respectivamente, `1` e `3` ou `1` e `9`.  -->
-
-<!-- Óbitos maternos que ocorreram durante o puerpério, até 42 dias após o parto, são aqueles em que os valores das variáveis `OBITOGRAV` e `OBITOPUERP` são, respectivamente, `2` e `1` ou `9` e `1`, enquanto os óbitos que ocorreram durante o puerpério, entre 43 dias e menos de um ano após o parto, são aqueles em que os valores dessas variáveis são, respectivamente, `2` e `2` ou `9` e `2`.  -->
-
-<!-- Óbitos maternos que não ocorreram durante a gravidez ou puerpério são aqueles em que os valores de `OBITOGRAV` e `OBITOPUERP` são, respectivamente, `2` e `3`, `2` e `9` ou `9` e `3`. -->
-
-<!-- Óbitos maternos cujo período de ocorrência é não informado ou ignorado são aqueles em que os valores de `OBITOGRAV` e `OBITOPUERP` são, respectivamente, `9` e `9`. -->
-
-<!-- Por fim, óbitos maternos cujo período de ocorrência é inconsistente são aqueles em que os valores de `OBITOGRAV` e `OBITOPUERP` são, respectivamente, `1` e `1` ou `1` e `2`. -->
-
-<!-- A coluna "Investigação por CMM" indica se os óbitos foram, ou não, investigados por um Comitê de Morte Materna. É considerado que um óbito foi investigado por um Comitê de Morte Materna se o valor da variável `FONTEINV`, do SIM, for `1`. -->
-
 Row 
 -------------------------------------
    
-### <span style = 'font-weight: 700; color: black'>Tabela de óbitos `r reactive(nome_tabela())`</span>
+### <span style = 'font-weight: 700; color: black'>Tabela de óbitos `r reactive(nome_tabela())` por categoria da CID-10</span>
 
 ```{r tabela_om}
 dados_tabela <- reactive({
@@ -438,16 +415,16 @@ renderReactable({
         groupBy = c("capitulo_cid10", "grupo_cid10", "causabas_categoria"),
         columns = list(
           capitulo_cid10 = colDef(
-            name = "Capítulo CID10",
+            name = "Capítulo CID-10",
             footer = "Total"
           ),
           grupo_cid10 = colDef(
-            name = "Grupo CID10",
+            name = "Grupo CID-10",
             aggregate = JS("function() { return ''}"),
             format = list(aggregated = colFormat(prefix = "Todos"))
           ),
           causabas_categoria = colDef(
-            name = "Categoria CID10",
+            name = "Categoria CID-10",
             aggregate = JS("function() { return ''}"),
             format = list(aggregated = colFormat(prefix = "Todas"))
           ),
@@ -471,7 +448,6 @@ renderReactable({
           )
         ),
         defaultSorted = c("grupo_cid10", "capitulo_cid10", "causabas_categoria"),
-        searchable = TRUE,
         sortable = TRUE,
         resizable = TRUE,
         filterable = TRUE,
@@ -495,5 +471,611 @@ renderReactable({
 ```   
 
 
+Óbitos por causas principais {data-navmenu="Visualizações"}
+=========================================================
 
+Inputs {.sidebar data-width=350 style="width: 350px; visibility: visible; top: 75px;"}
+------------------------------------- 
+```{r input-principais}
+hr();h5(span("Óbitos fetais e neonatais por causas principais", style = "font-weight: bold;")); hr()
+p(em("Obs.: os dados de 2023 são preliminares."))
+hr()
+
+selectInput(
+  inputId = "selectTipoP",
+  label = HTML("<span class = 'negrito'> Selecione o tipo de óbito: </span>"),
+  choices = c("Fetais", "Neonatais precoces", "Neonatais tardios", "Neonatais", "Pós-neonatais")
+)
+
+hr()
+span("Temporalidade e localidade", style = "font-weight: bold; font-size: 17px")
+HTML("<span style='display: block; margin-bottom: 7px;'> </span>")
+
+numericInput(
+  inputId = "selectAnoP",
+  label = HTML("<span class = 'negrito'> Selecione o ano de análise (apenas para a tabela): </span>"),
+  value = max(dados_obitos_fetais_neonatais$ano),
+  min = min(dados_obitos_fetais_neonatais$ano),
+  max = max(dados_obitos_fetais_neonatais$ano)
+)
+
+selectInput(
+  inputId = "selectNivelP",
+  label = HTML("<span class = 'negrito'> Selecione o nível de análise: </span>"),
+  choices = c("Nacional", "Estadual", "Municipal"),
+  selected = "Nacional"
+)
+
+conditionalPanel(
+  condition = "input.selectNivelP == 'Nacional'",
+  checkboxGroupInput(
+    inputId = "selectRegiaoP",
+    label = HTML("<span class = 'negrito'> Selecione as regiões de análise: </span>"),
+    choices = c("Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"),
+    selected = c("Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul")
+  )
+)
+
+conditionalPanel(
+  condition = "input.selectNivelP == 'Estadual'",
+  selectInput(
+    inputId = "selectEstadoP",
+    label = HTML("<span class = 'negrito'> Selecione o estado: </span>"),
+    choices = estadosChoices,
+    multiple = FALSE
+    )
+)
+
+conditionalPanel(
+    condition = "input.selectNivelP == 'Municipal'",
+    selectizeInput(
+      inputId = "selectEstadoMuniP",
+      label = HTML("<span class = 'negrito'> Selecione o estado ao qual pertence o município: </span>"),
+      choices = estadosChoices,
+      options = list(placeholder = "Selecione um estado")
+    ),
+    selectizeInput(
+      inputId = "selectMunicipioP",
+      label = HTML("<span class = 'negrito'> Selecione o município: </span>"),
+      choices = NULL,
+      options = list(placeholder = "Selecione um município")
+    )
+)
+
+observeEvent(input$selectEstadoMuniP, {
+  updateSelectizeInput(
+    inputId = "selectMunicipioP",
+    choices = sort(dados_obitos_fetais_neonatais |> dplyr::filter(uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuniP)])) |> pull(municipio) |> unique())
+  )
+})
+
+hr()
+span("Características do feto ou neonato", style = "font-weight: bold; font-size: 17px")
+HTML("<span style='display: block; margin-bottom: 7px;'> </span>")
+
+
+checkboxGroupInput(
+  inputId = "selectPesoP",
+  label = HTML("<span class = 'negrito'> Selecione as faixas de peso ao nascer: </span>"),
+  choices = c("< 1500 g", "1500 a 1999 g", "2000 a 2499 g", "≥ 2500 g", "Sem informação"),
+  selected = c("< 1500 g", "1500 a 1999 g", "2000 a 2499 g", "≥ 2500 g", "Sem informação")
+)
+
+hr()
+
+selectInput(
+  inputId = "selectDownloadP",
+  label = HTML("<span class = 'negrito'> Deseja fazer o download dessa tabela? </span>"),
+  choices = c("Não", "Sim"),
+  selected = "Não"
+)
+
+conditionalPanel(
+  condition = "input.selectDownloadP == 'Sim'",
+  selectInput(
+    inputId = "selectArquivoP",
+    label = HTML("<span class = 'negrito'> Selecione o tipo do arquivo: </span>"),
+    choices = c("CSV", "XLSX"),
+    selected = "CSV"
+  ),
+  conditionalPanel(
+    condition = "input.selectArquivoP == 'CSV'",
+    downloadHandler(
+      filename = reactive({
+        case_when(
+          input$selectNivelP == "Nacional" ~ paste0(glue::glue("obitos_{nome_tabela()}_"), janitor::make_clean_names(input$selectNivelP), input$selectAnoP, ".csv"),
+          input$selectNivelP == "Estadual" ~ paste0(glue::glue("obitos_{nome_tabela()}_"), janitor::make_clean_names(input$selectEstadoP), input$selectAnoP, ".csv"),
+          input$selectNivelP == "Municipal" ~
+            paste0(glue::glue("obitos_{nome_tabela()}_"), janitor::make_clean_names(gsub(" ", "_", gsub(" - ", " ", input$selectMunicipioP))), input$selectAnoP, ".csv")
+        )
+        }),
+      content = function(file) {
+        write.table(dados_download(), file, sep = ";", row.names = FALSE, fileEncoding = "UTF-8")
+      }
+    )
+  ),
+  conditionalPanel(
+    condition = "input.selectArquivoP == 'XLSX'",
+    downloadHandler(
+      filename = reactive({
+        case_when(
+          input$selectNivelP == "Nacional" ~ paste0(glue::glue("obitos_{nome_tabela()}_"), janitor::make_clean_names(input$selectNivelP), input$selectAnoP, ".xlsx"),
+          input$selectNivelP == "Estadual" ~ paste0(glue::glue("obitos_{nome_tabela()}_"), janitor::make_clean_names(input$selectEstadoP), input$selectAnoP, ".xlsx"),
+          input$selectNivelP == "Municipal" ~
+            paste0(glue::glue("obitos_{nome_tabela()}_"), janitor::make_clean_names(gsub(" ", "_", gsub(" - ", " ", input$selectMunicipioP))), input$selectAnoP, ".xlsx")
+        )
+        }),
+      content = function(file) {
+        write.xlsx(dados_download(), file, sep = ";", row.names = FALSE, fileEncoding = "UTF-8")
+      }
+    )
+  )
+)
+
+
+dados_principais_filtrados <- reactive({
+  if (input$selectNivelP == "Municipal") {
+    req(input$selectEstadoMuniP)
+  }
+  if (input$selectNivelP == "Nacional") {
+    dados_obitos_fetais_neonatais |>
+      filter(
+        ano == input$selectAnoP,
+        regiao %in% input$selectRegiaoP,
+        faixa_de_peso %in% input$selectPesoP
+      ) |>
+      filter(
+        if (input$selectTipoP == "Neonatais") 
+          tipo_do_obito %in% c("Neonatais precoces", "Neonatais tardios")
+        else 
+          tipo_do_obito == input$selectTipoP
+      ) |>
+      group_by(regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      summarise(obitos = sum(as.numeric(obitos))) |>
+      ungroup()
+  } else if (input$selectNivelP == "Estadual") {
+    dados_obitos_fetais_neonatais |>
+      filter(
+        ano == input$selectAnoP,
+        uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoP)]),
+        faixa_de_peso %in% input$selectPesoP
+      ) |>
+      filter(
+        if (input$selectTipoP == "Neonatais") 
+          tipo_do_obito %in% c("Neonatais precoces", "Neonatais tardios")
+        else 
+          tipo_do_obito == input$selectTipoP
+      ) |>
+      group_by(uf, regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      summarise(obitos = sum(as.numeric(obitos))) |>
+      ungroup() 
+  } else if (input$selectNivelP == "Municipal") {
+    dados_obitos_fetais_neonatais |>
+      filter(
+        ano == input$selectAnoP,
+        uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuniP)]),
+        municipio == input$selectMunicipioP,
+        faixa_de_peso %in% input$selectPesoP
+      ) |>
+      filter(
+        if (input$selectTipoP == "Neonatais") 
+          tipo_do_obito %in% c("Neonatais precoces", "Neonatais tardios")
+        else 
+          tipo_do_obito == input$selectTipoP
+      ) |>
+      group_by(municipio, uf, regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      summarise(obitos = sum(as.numeric(obitos))) |>
+      ungroup()
+  }
+})
+
+dados_download <- reactive({
+  req(input$selectEstadoMuniP)
+  if (input$selectTipoP == "Neonatais") {
+    dados_principais_filtrados() |>
+      mutate(
+        tipo_do_obito = "Neonatais",
+        grupo_principais = dplyr::case_when(
+        grupo_principais == "principais_a00_b99" ~ "(A00-B99) Infecciosas",
+        grupo_principais == "principais_j00_j99" ~ "(J00-J99) Respiratórias",
+        grupo_principais == "principais_p00_p04" ~ "(P00-P04) Fatores maternos e condições da gravidez, parto e trabalho de parto",
+        grupo_principais == "principais_p05_p08" ~ "(P05-P08) Duração da gestação e crescimento fetal",
+        grupo_principais == "principais_p10_p15" ~ "(P10-P15) Traumatismo de parto",
+        grupo_principais == "principais_p20_p29" ~ "(P20-P29) Transtornos respiratórios e cardiovasculares do período fetal",
+        grupo_principais == "principais_p35_p39" ~ "(P35-P39) Infecções do período fetal",
+        grupo_principais == "principais_p50_p61" ~ "(P50-P61) Transtornos hemorrágicos e hematológicos",
+        grupo_principais == "principais_p70_p74" ~ "(P70-P74) Transtornos endócrinos e metabólicos transitórios",
+        grupo_principais == "principais_p75_p78" ~ "(P75-P78) Transtornos do aparelho digestivo",
+        grupo_principais == "principais_p80_p83" ~ "(P80-P83) Afecções comprometendo tegumento e regulação térmica ",
+        grupo_principais == "principais_p90_p96" ~ "(P90-P96) Outros transtornos no período fetal",
+        grupo_principais == "principais_a00_b99" ~ "(A00-B99) Infecciosas",
+        grupo_principais == "principais_q00_q99" ~ "(Q00-Q99) Anomalias congênitas",
+        grupo_principais == "principais_outros" ~ "Demais causas",
+      )
+    )
+  } else {
+    dados_principais_filtrados() |>
+      mutate(
+        grupo_principais = dplyr::case_when(
+          grupo_principais == "principais_a00_b99" ~ "(A00-B99) Infecciosas",
+          grupo_principais == "principais_j00_j99" ~ "(J00-J99) Respiratórias",
+          grupo_principais == "principais_p00_p04" ~ "(P00-P04) Fatores maternos e condições da gravidez, parto e trabalho de parto",
+          grupo_principais == "principais_p05_p08" ~ "(P05-P08) Duração da gestação e crescimento fetal",
+          grupo_principais == "principais_p10_p15" ~ "(P10-P15) Traumatismo de parto",
+          grupo_principais == "principais_p20_p29" ~ "(P20-P29) Transtornos respiratórios e cardiovasculares do período fetal",
+          grupo_principais == "principais_p35_p39" ~ "(P35-P39) Infecções do período fetal",
+          grupo_principais == "principais_p50_p61" ~ "(P50-P61) Transtornos hemorrágicos e hematológicos",
+          grupo_principais == "principais_p70_p74" ~ "(P70-P74) Transtornos endócrinos e metabólicos transitórios",
+          grupo_principais == "principais_p75_p78" ~ "(P75-P78) Transtornos do aparelho digestivo",
+          grupo_principais == "principais_p80_p83" ~ "(P80-P83) Afecções comprometendo tegumento e regulação térmica ",
+          grupo_principais == "principais_p90_p96" ~ "(P90-P96) Outros transtornos no período fetal",
+          grupo_principais == "principais_a00_b99" ~ "(A00-B99) Infecciosas",
+          grupo_principais == "principais_q00_q99" ~ "(Q00-Q99) Anomalias congênitas",
+          grupo_principais == "principais_outros" ~ "Demais causas",
+        )
+      )
+  }
+})
+
+nome_tabela <- reactive({
+    case_when(
+    input$selectTipoP == "Fetais" ~ "fetais",
+    input$selectTipoP == "Neonatais precoces" ~ "neonatais precoces",
+    input$selectTipoP == "Neonatais tardios" ~ "neonatais tardios",
+    input$selectTipoP == "Neonatais" ~ "neonatais",
+    input$selectTipoP == "Pós-neonatais" ~ "pós-neonatais"
+  ) 
+})
+
+```
+
+*****
+
+Neste painel, um óbito foi considerado fetal caso tenha sido registrado no SIM-DOFET com idade gestacional igual ou superior a 22 semanas (`((GESTACAO != "Menos de 22 semanas" & !is.na(GESTACAO)) | (SEMAGESTAC >= 22 & SEMAGESTAC != 99))`) ou com peso igual ou superior a 500 g (`PESO >= 500`). O valor `99` da variável `SEMAGESTAC` foi considerado como um valor faltante.
+
+
+
+
+Row {.tabset .tabset-fade} 
+-------------------------------------
+
+### Tabela   
+
+##### <span style = 'font-weight: 700; color: black'>Tabela de óbitos `r reactive(nome_tabela())` por causas principais definidas pelo DATASUS (Fonte: <a href = http://www2.datasus.gov.br/cid10/V2008/WebHelp/p00_p96.htm target = _blank>DATASUS</a>)</span>
+
+```{r}
+observe({
+  req(input$selectEstadoMuniP)
+  print(data_plot_principais() |> filter(ano > 2017))
+  
+  
+})
+```
+
+```{r tabela_p}
+tags$style(HTML("
+  .chart-wrapper .chart-stage {
+    overflow: auto
+  }
+"))
+
+dados_principais_tabela <- reactive({
+  if (input$selectNivelP == "Nacional") {
+    dados_principais_filtrados() |>
+      select(!c(ano, regiao, tipo_do_obito)) 
+  } else if (input$selectNivelP == "Estadual") {
+    dados_principais_filtrados() |>
+      select(!c(uf, regiao, ano, tipo_do_obito)) 
+  } else if (input$selectNivelP == "Municipal") {
+    dados_principais_filtrados() |>
+      select(!c(municipio, uf, regiao, ano, tipo_do_obito)) 
+  }
+})
+
+
+renderReactable({
+  validate(
+    need(nrow(dados_principais_tabela()) != 0, message = glue::glue("Não existem registros de óbitos {nome_tabela()} para os filtros selecionados."))
+  )
+  if (nrow(dados_principais_tabela()) > 0) {
+    dados_principais_tabela() |>
+        mutate(
+          grupo_principais = dplyr::case_when(
+            grupo_principais == "principais_a00_b99" ~ "(A00-B99) Infecciosas",
+            grupo_principais == "principais_j00_j99" ~ "(J00-J99) Respiratórias",
+            grupo_principais == "principais_p00_p04" ~ "(P00-P04) Fatores maternos e condições da gravidez, parto e trabalho de parto",
+            grupo_principais == "principais_p05_p08" ~ "(P05-P08) Duração da gestação e crescimento fetal",
+            grupo_principais == "principais_p10_p15" ~ "(P10-P15) Traumatismo de parto",
+            grupo_principais == "principais_p20_p29" ~ "(P20-P29) Transtornos respiratórios e cardiovasculares do período fetal",
+            grupo_principais == "principais_p35_p39" ~ "(P35-P39) Infecções do período fetal",
+            grupo_principais == "principais_p50_p61" ~ "(P50-P61) Transtornos hemorrágicos e hematológicos",
+            grupo_principais == "principais_p70_p74" ~ "(P70-P74) Transtornos endócrinos e metabólicos transitórios",
+            grupo_principais == "principais_p75_p78" ~ "(P75-P78) Transtornos do aparelho digestivo",
+            grupo_principais == "principais_p80_p83" ~ "(P80-P83) Afecções comprometendo tegumento e regulação térmica ",
+            grupo_principais == "principais_p90_p96" ~ "(P90-P96) Outros transtornos no período fetal",
+            grupo_principais == "principais_a00_b99" ~ "(A00-B99) Infecciosas",
+            grupo_principais == "principais_q00_q99" ~ "(Q00-Q99) Anomalias congênitas",
+            grupo_principais == "principais_outros" ~ "Demais causas",
+          )
+      ) |>
+      reactable(
+        groupBy = c("capitulo_cid10", "grupo_principais", "causabas_categoria"),
+        columns = list(
+          capitulo_cid10 = colDef(
+            name = "Capítulo CID-10",
+            footer = "Total"
+          ),
+          grupo_principais = colDef(
+            name = "Grupo de causas principais",
+            aggregate = JS("function() { return ''}"),
+            format = list(aggregated = colFormat(prefix = "Todos"))
+          ),
+          causabas_categoria = colDef(
+            name = "Categoria CID-10",
+            aggregate = JS("function() { return ''}"),
+            format = list(aggregated = colFormat(prefix = "Todas"))
+          ),
+          faixa_de_peso = colDef(
+            name = "Faixa de peso",
+            aggregate = JS("function() { return ''}"),
+            format = list(aggregated = colFormat(prefix = "Todas"))
+          ),
+          obitos = colDef(
+            name = "Nº de óbitos",
+            aggregate = "sum",
+            footer = JS(
+              "function(colInfo) {
+                let obitosTotais = 0
+                colInfo.data.forEach(function(row) {
+                  obitosTotais += row['obitos']
+                })
+                return obitosTotais
+              }"
+            )
+          )
+        ),
+        defaultSorted = c("capitulo_cid10", "grupo_principais", "causabas_categoria"),
+        sortable = TRUE,
+        resizable = TRUE,
+        filterable = TRUE,
+        highlight = TRUE,
+        striped = TRUE,
+        bordered = FALSE,
+        pagination = FALSE,
+        defaultColDef = colDef(footerStyle = list(fontWeight = "bold")),
+        rowStyle = JS(
+          "function(rowInfo) {
+          if (rowInfo.aggregated === true) {
+           return { fontWeight: 700 }
+          }
+        }"
+        )
+      )
+  }
+})
+
+```
+
+### Gráfico 
+
+##### <span style = 'font-weight: 700; color: black'> Distribuição percentual dos óbitos `r reactive(nome_tabela())` por causas principais definidas pelo DATASUS (Fonte: <a href = http://www2.datasus.gov.br/cid10/V2008/WebHelp/p00_p96.htm target = _blank> DATASUS </a>)</span> 
+
+
+```{r grafico_principais}
+shinyWidgets::pickerInput(
+  inputId = "selectCidsPrincipais",
+  label = "Selecione os grupos de causas principais da CID-10:",
+  options = list(placeholder = "Selecione os grupos de causas principais da CID-10", `actions-box` = TRUE, `deselect-all-text` = "Desselecionar todas", `select-all-text` = "Selecionar todas", `none-selected-text` = "Nenhuma opção selecionada"),
+  choices = c(
+    "(A00-B99) Infecciosas" = "principais_a00_b99",
+    "(J00-J99) Respiratórias" = "principais_j00_j99",
+    "(P00-P04) Feto e recém nascido afetado por fatores maternos e por condições da gravidez, do trabalho de parto e do parto" = "principais_p00_p04",
+    "(P05-P08) Transtornos relacionados com a duração da gestação e com o crescimento fetal" = "principais_p05_p08",
+    "(P10-P15) Traumatismo de parto" = "principais_p10_p15",
+    "(P20-P29) Transtornos respiratórios e cardiovasculares específicos do período fetal" = "principais_p20_p29",
+    "(P35-P39) Infeccções específicas do período fetal" = "principais_p35_p39",
+    "(P50-P61) Transtornos hemorrágicos e hematológicos do feto e do recém-nascido" = "principais_p50_p61",
+    "(P70-P74) Transtornos endócrinos e metabólicos transitórios específicos do feto e do recém-nascido" = "principais_p70_p74",
+    "(P75-P78) Transtornos do aparelho digestivo do feto ou do recém-nascido" = "principais_p75_p78",
+    "(P80-P83) Afecções comprometendo o tegumento e a regulação térmica do feto e do recém-nascido" = "principais_p80_p83",
+    "(P90-P96) Outros transtornos originados do período fetal" = "principais_p90_p96",
+    "(Q00-Q99) Anomalias congênitas" = "principais_q00_q99"
+  ),
+  selected = c(
+    "principais_a00_b99",
+    "principais_j00_j99",
+    "principais_p00_p04",
+    "principais_p05_p08",
+    "principais_p10_p15",
+    "principais_p20_p29",
+    "principais_p35_p39",
+    "principais_p50_p61",
+    "principais_p70_p74",
+    "principais_p75_p78",
+    "principais_p80_p83",
+    "principais_p90_p96",
+    "principais_q00_q99"
+  ),
+  multiple = TRUE,
+  width = "100%"
+)
+```
+
+
+```{r grafico-principais}
+data_plot_principais_aux <- reactive({
+  if (input$selectNivelP == "Municipal") {
+    req(input$selectEstadoMuniP)
+  }
+  if (input$selectNivelP == "Nacional") {
+    dados_obitos_fetais_neonatais |>
+      filter(
+        regiao %in% input$selectRegiaoP,
+        faixa_de_peso %in% input$selectPesoP
+      ) |>
+      filter(
+        if (input$selectTipoP == "Neonatais")
+          tipo_do_obito %in% c("Neonatais precoces", "Neonatais tardios")
+        else
+          tipo_do_obito == input$selectTipoP
+      ) |>
+      group_by(regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      summarise(obitos = sum(as.numeric(obitos))) |>
+      ungroup()
+  } else if (input$selectNivelP == "Estadual") {
+    dados_obitos_fetais_neonatais |>
+      filter(
+        uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoP)]),
+        faixa_de_peso %in% input$selectPesoP
+      ) |>
+      filter(
+        if (input$selectTipoP == "Neonatais")
+          tipo_do_obito %in% c("Neonatais precoces", "Neonatais tardios")
+        else
+          tipo_do_obito == input$selectTipoP
+      ) |>
+      group_by(uf, regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      summarise(obitos = sum(as.numeric(obitos))) |>
+      ungroup()
+  } else if (input$selectNivelP == "Municipal") {
+    dados_obitos_fetais_neonatais |>
+      filter(
+        uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuniP)]),
+        municipio == input$selectMunicipioP,
+        faixa_de_peso %in% input$selectPesoP
+      ) |>
+      filter(
+        if (input$selectTipoP == "Neonatais")
+          tipo_do_obito %in% c("Neonatais precoces", "Neonatais tardios")
+        else
+          tipo_do_obito == input$selectTipoP
+      ) |>
+      group_by(municipio, uf, regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      summarise(obitos = sum(as.numeric(obitos))) |>
+      ungroup()
+  }
+})
+
+data_plot_principais_local <- reactive({
+  data_plot_principais_aux() |>
+    group_by(ano, grupo_principais) |>
+    summarise(obitos = sum(obitos)) |>
+    ungroup() |>
+    pivot_wider(
+      names_from = grupo_principais, values_from = obitos, values_fill = 0
+    ) |>
+    rowwise() |>
+    mutate(obitos_totais = sum(dplyr::c_across(dplyr::starts_with("principais")))) |>
+    dplyr::mutate_at(dplyr::vars(dplyr::starts_with("principais")), ~ (. / obitos_totais * 100)) |>
+    tidyr::pivot_longer(
+      cols = dplyr::contains("principais"),
+      names_to = "grupo_principais",
+      values_to = "porc_obitos"
+    ) |>
+    mutate(
+      grupo_principais = ifelse(
+        grupo_principais %in% input$selectCidsPrincipais,
+        dplyr::case_when(
+          grupo_principais == "principais_a00_b99" ~ "(A00-B99) Infecciosas",
+          grupo_principais == "principais_j00_j99" ~ "(J00-J99) Respiratórias",
+          grupo_principais == "principais_p00_p04" ~ "(P00-P04) Fatores maternos e condições da gravidez, parto e trabalho de parto",
+          grupo_principais == "principais_p05_p08" ~ "(P05-P08) Duração da gestação e crescimento fetal",
+          grupo_principais == "principais_p10_p15" ~ "(P10-P15) Traumatismo de parto",
+          grupo_principais == "principais_p20_p29" ~ "(P20-P29) Transtornos respiratórios e cardiovasculares do período fetal",
+          grupo_principais == "principais_p35_p39" ~ "(P35-P39) Infecções do período fetal",
+          grupo_principais == "principais_p50_p61" ~ "(P50-P61) Transtornos hemorrágicos e hematológicos",
+          grupo_principais == "principais_p70_p74" ~ "(P70-P74) Transtornos endócrinos e metabólicos transitórios",
+          grupo_principais == "principais_p75_p78" ~ "(P75-P78) Transtornos do aparelho digestivo",
+          grupo_principais == "principais_p80_p83" ~ "(P80-P83) Afecções comprometendo tegumento e regulação térmica ",
+          grupo_principais == "principais_p90_p96" ~ "(P90-P96) Outros transtornos no período fetal",
+          grupo_principais == "principais_a00_b99" ~ "(A00-B99) Infecciosas",
+          grupo_principais == "principais_q00_q99" ~ "(Q00-Q99) Anomalias congênitas",
+          grupo_principais == "principais_outros" ~ "Demais causas",
+        ),
+        "Demais causas"
+      )
+    ) |>
+    group_by(ano, grupo_principais) |>
+    summarise(porc_obitos = round(sum(porc_obitos), 1)) |>
+    ungroup()
+})
+
+
+data_plot_principais_referencia <- reactive({
+  dados_obitos_fetais_neonatais |>
+    filter(
+      faixa_de_peso %in% input$selectPesoP
+    ) |>
+    filter(
+      if (input$selectTipoP == "Neonatais")
+        tipo_do_obito %in% c("Neonatais precoces", "Neonatais tardios")
+      else
+        tipo_do_obito == input$selectTipoP
+    ) |>
+    group_by(ano, grupo_principais) |>
+    summarise(obitos = sum(as.numeric(obitos))) |>
+    ungroup() |>
+    pivot_wider(
+    names_from = grupo_principais, values_from = obitos, values_fill = 0
+  ) |>
+  rowwise() |>
+  mutate(obitos_totais = sum(dplyr::c_across(dplyr::starts_with("principais")))) |>
+  dplyr::mutate_at(dplyr::vars(dplyr::starts_with("principais")), ~ (. / obitos_totais * 100)) |>
+  tidyr::pivot_longer(
+    cols = dplyr::contains("principais"),
+    names_to = "grupo_principais",
+    values_to = "br_porc_obitos"
+  ) |>
+  mutate(
+    grupo_principais = ifelse(
+      grupo_principais %in% input$selectCidsPrincipais,
+      dplyr::case_when(
+        grupo_principais == "principais_a00_b99" ~ "(A00-B99) Infecciosas",
+        grupo_principais == "principais_j00_j99" ~ "(J00-J99) Respiratórias",
+        grupo_principais == "principais_p00_p04" ~ "(P00-P04) Fatores maternos e condições da gravidez, parto e trabalho de parto",
+        grupo_principais == "principais_p05_p08" ~ "(P05-P08) Duração da gestação e crescimento fetal",
+        grupo_principais == "principais_p10_p15" ~ "(P10-P15) Traumatismo de parto",
+        grupo_principais == "principais_p20_p29" ~ "(P20-P29) Transtornos respiratórios e cardiovasculares do período fetal",
+        grupo_principais == "principais_p35_p39" ~ "(P35-P39) Infecções do período fetal",
+        grupo_principais == "principais_p50_p61" ~ "(P50-P61) Transtornos hemorrágicos e hematológicos",
+        grupo_principais == "principais_p70_p74" ~ "(P70-P74) Transtornos endócrinos e metabólicos transitórios",
+        grupo_principais == "principais_p75_p78" ~ "(P75-P78) Transtornos do aparelho digestivo",
+        grupo_principais == "principais_p80_p83" ~ "(P80-P83) Afecções comprometendo tegumento e regulação térmica ",
+        grupo_principais == "principais_p90_p96" ~ "(P90-P96) Outros transtornos no período fetal",
+        grupo_principais == "principais_a00_b99" ~ "(A00-B99) Infecciosas",
+        grupo_principais == "principais_q00_q99" ~ "(Q00-Q99) Anomalias congênitas",
+        grupo_principais == "principais_outros" ~ "Demais causas",
+      ),
+      "Demais causas"
+    )
+  ) |>
+  group_by(ano, grupo_principais) |>
+  summarise(br_porc_obitos = round(sum(br_porc_obitos), 1)) |>
+  ungroup()
+})
+
+data_plot_principais <- reactive(full_join(data_plot_principais_local(), data_plot_principais_referencia()))
+
+
+highcharter::renderHighchart({
+  highcharter::highchart() |>
+    highcharter::hc_add_series(
+      data = data_plot_principais(),
+      highcharter::hcaes(x = ano, y = porc_obitos, group = grupo_principais),
+      type = "column",
+      showInLegend = TRUE,
+      tooltip = list(
+        pointFormat = "<span style = 'color: {series.color}'> &#9679 </span> {series.name}: <b> {point.y}% </b> <br> Média nacional: <b> {point.br_porc_obitos:,f}% </b>"
+      )
+    ) |>
+    highcharter::hc_plotOptions(series = list(stacking = "percent")) |>
+    highcharter::hc_legend(reversed = FALSE, title = list(text = "Grupo CID-10")) |>
+    highcharter::hc_colors(
+      viridis::magma(length(unique(data_plot_principais()$grupo_principais)) + 2, direction = 1)[-c(1, length(unique(data_plot_principais()$grupo_principais)) + 2)]
+    ) |>
+    highcharter::hc_xAxis(title = list(text = ""), categories = unique(data_plot_principais()$ano), allowDecimals = FALSE) |>
+    highcharter::hc_yAxis(title = list(text = glue::glue("% relativo ao total de óbitos {nome_tabela()} por causas principais")), min = 0, max = 100)
+
+})
+```
 
