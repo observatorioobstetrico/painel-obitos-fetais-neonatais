@@ -62,27 +62,34 @@ library(shiny)
 library(reactable)
 library(reactablefmtr)
 library(openxlsx)
+library(glue)
 
 
-#Carregando os arquivos necessários
+# Carregando os arquivos necessários
 tabela_aux_municipios <- read_delim("R/databases/tabela_auxiliar_municipios.csv", 
                                               delim = ",", escape_double = FALSE, trim_ws = TRUE) 
 
-dados_obitos_fetais <- read.csv(gzfile("dados_oobr_obitos_fetais_2012_2023.csv.gz")) 
+dados_obitos_fetais <- read.csv(gzfile("dados_oobr_obitos_fetais_2012_2024.csv.gz")) 
 
-dados_obitos_neonatais <- read.csv(gzfile("dados_oobr_obitos_neonatais_2012_2023.csv.gz")) 
+dados_obitos_neonatais <- read.csv(gzfile("dados_oobr_obitos_neonatais_2012_2024.csv.gz")) 
 
 dados_obitos_fetais_neonatais <- full_join(dados_obitos_fetais, dados_obitos_neonatais) |>
-  arrange(codigo)
+  arrange(codigo) |>
+  mutate(
+    faixa_de_peso = factor(
+      faixa_de_peso,
+      levels = c("< 1500 g", "1500 a 1999 g","2000 a 2499 g", "≥ 2500 g", "Sem informação")
+    ),
+    racacor = factor(
+      racacor,
+      levels = c("Branca", "Preta", "Amarela", "Parda", "Indígena", "Ignorado")
+    )
+  )
 
-dados_obitos_fetais_neonatais$faixa_de_peso <- factor(
-  dados_obitos_fetais_neonatais$faixa_de_peso,
-  levels = c("< 1500 g", "1500 a 1999 g","2000 a 2499 g", "≥ 2500 g", "Sem informação")
-)
 
 estadosChoices <- sort(unique(tabela_aux_municipios$uf))
 
-#Definindo as configurações globais das tabelas
+# Definindo as configurações globais das tabelas
 options(reactable.theme = reactableTheme(
   borderColor = "#dfe2e5",
   stripedColor = "#e5efff",
@@ -90,6 +97,18 @@ options(reactable.theme = reactableTheme(
   cellPadding = "8px 12px",
   searchInputStyle = list(width = "100%")
 ))
+
+# Obtendo o dia, mês e ano por extenso
+df_meses <- data.frame(
+  num_mes = 1:12,
+  nome_mes = c("janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho",
+               "agosto", "setembro", "outubro", "novembro", "dezembro")
+)
+
+data <- Sys.Date()
+data_por_extenso <- glue(
+  "{substr(data, 9, 10)} de {df_meses$nome_mes[which(df_meses$num_mes == as.numeric(substr(data, start = 6, stop = 7)))]} de {substr(data, 1, 4)}"
+)
 ```
 
 Sobre
@@ -97,7 +116,7 @@ Sobre
 
 <h3><span style = "font-weight: bold;">O OOBr Óbitos Fetais e Neonatais</span></h3>
 
-É um painel de visualização dinâmico com análises acerca da mortalidade de fetos e neonatos no Brasil, sob a perspectiva de algumas variáveis da base de dados do Sistema de Informações sobre Mortalidade (SIM). As informações consideradas são referentes aos registros de óbitos de fetos e neonatos dos anos de 2012 a 2023 **(sendo os dados de 2023 preliminares)**.
+É um painel de visualização dinâmico com análises acerca da mortalidade de fetos e neonatos no Brasil, sob a perspectiva de algumas variáveis da base de dados do Sistema de Informações sobre Mortalidade (SIM). As informações consideradas são referentes aos registros de óbitos de fetos e neonatos dos anos de 2012 a 2024 **(sendo os dados de 2023 e 2024 preliminares)**.
 
 <h3><span style = "font-weight: bold;">O Observatório Obstétrico Brasileiro (OOBr)</span></h3>
 
@@ -107,7 +126,7 @@ Conta com **pesquisadores** da <a href = https://www.ufes.br target = _blank> Un
 
 <h3><span style = "font-weight: bold;">Os dados</span></h3>
 
-São providos do DATASUS do Ministério da Saúde e formam um grande banco anual composto por todos os registros das declarações de óbitos (o SIM) que está disponível a partir do ano de 1996. Atualmente, os dados do SIM estão disponíveis até 2023 **(sendo estes preliminares)**. Os dados deste painel são atualizados na última sexta feira de cada mês, com a última atualização tendo ocorrido em 31 de março de 2024.
+São providos do DATASUS do Ministério da Saúde e formam um grande banco anual composto por todos os registros das declarações de óbitos (o SIM) que está disponível a partir do ano de 1996. Atualmente, os dados do SIM estão disponíveis até 2024 **(sendo estes e os de 2023 preliminares)**. Os dados deste painel são atualizados na última sexta feira de cada mês, tendo a última atualização ocorrido em `r data_por_extenso`.
 
 <h3><span style = "font-weight: bold;">Contato</span></h3>
 
@@ -246,6 +265,13 @@ checkboxGroupInput(
   selected = c("< 1500 g", "1500 a 1999 g", "2000 a 2499 g", "≥ 2500 g", "Sem informação")
 )
 
+checkboxGroupInput(
+  inputId = "selectRaca",
+  label = HTML("<span class = 'negrito'> Selecione a raça/cor do feto ou neonato: </span>"),
+  choices = c("Branca", "Preta", "Amarela", "Parda", "Indígena", "Ignorado"),
+  selected = c("Branca", "Preta", "Amarela", "Parda", "Indígena", "Ignorado")
+)
+
 hr()
 
 selectInput(
@@ -307,7 +333,8 @@ dados_filtrados <- reactive({
       filter(
         ano == input$selectAno,
         regiao %in% input$selectRegiao,
-        faixa_de_peso %in% input$selectPeso
+        faixa_de_peso %in% input$selectPeso,
+        racacor %in% input$selectRaca
       ) |>
       filter(
         if (input$selectTipo == "Neonatais") 
@@ -315,7 +342,7 @@ dados_filtrados <- reactive({
         else 
           tipo_do_obito == input$selectTipo
       ) |>
-      group_by(regiao, ano, capitulo_cid10, grupo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      group_by(regiao, ano, capitulo_cid10, grupo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso, racacor) |>
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup()
   } else if (input$selectNivel == "Estadual") {
@@ -323,7 +350,8 @@ dados_filtrados <- reactive({
       filter(
         ano == input$selectAno,
         uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstado)]),
-        faixa_de_peso %in% input$selectPeso
+        faixa_de_peso %in% input$selectPeso,
+        racacor %in% input$selectRaca
       ) |>
       filter(
         if (input$selectTipo == "Neonatais") 
@@ -331,7 +359,7 @@ dados_filtrados <- reactive({
         else 
           tipo_do_obito == input$selectTipo
       ) |>
-      group_by(uf, regiao, ano, capitulo_cid10, grupo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      group_by(uf, regiao, ano, capitulo_cid10, grupo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso, racacor) |>
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup() 
   } else if (input$selectNivel == "Municipal") {
@@ -340,7 +368,8 @@ dados_filtrados <- reactive({
         ano == input$selectAno,
         uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuni)]),
         municipio == input$selectMunicipio,
-        faixa_de_peso %in% input$selectPeso
+        faixa_de_peso %in% input$selectPeso,
+        racacor %in% input$selectRaca
       ) |>
       filter(
         if (input$selectTipo == "Neonatais") 
@@ -348,7 +377,7 @@ dados_filtrados <- reactive({
         else 
           tipo_do_obito == input$selectTipo
       ) |>
-      group_by(municipio, uf, regiao, ano, capitulo_cid10, grupo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      group_by(municipio, uf, regiao, ano, capitulo_cid10, grupo_cid10, causabas_categoria, tipo_do_obito, faixa_de_peso, racacor) |>
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup()
   }
@@ -412,7 +441,7 @@ renderReactable({
   if (nrow(dados_tabela()) > 0) {
     dados_tabela() |>
       reactable(
-        groupBy = c("capitulo_cid10", "grupo_cid10", "causabas_categoria"),
+        groupBy = c("capitulo_cid10", "grupo_cid10", "causabas_categoria", "faixa_de_peso"),
         columns = list(
           capitulo_cid10 = colDef(
             name = "Capítulo CID-10",
@@ -430,6 +459,11 @@ renderReactable({
           ),
           faixa_de_peso = colDef(
             name = "Faixa de peso",
+            aggregate = JS("function() { return ''}"),
+            format = list(aggregated = colFormat(prefix = "Todas"))
+          ),
+          racacor = colDef(
+            name = "Raça/cor",
             aggregate = JS("function() { return ''}"),
             format = list(aggregated = colFormat(prefix = "Todas"))
           ),
@@ -561,6 +595,13 @@ checkboxGroupInput(
   selected = c("< 1500 g", "1500 a 1999 g", "2000 a 2499 g", "≥ 2500 g", "Sem informação")
 )
 
+checkboxGroupInput(
+  inputId = "selectRacaP",
+  label = HTML("<span class = 'negrito'> Selecione a raça/cor do feto ou neonato: </span>"),
+  choices = c("Branca", "Preta", "Amarela", "Parda", "Indígena", "Ignorado"),
+  selected = c("Branca", "Preta", "Amarela", "Parda", "Indígena", "Ignorado")
+)
+
 hr()
 
 selectInput(
@@ -622,7 +663,8 @@ dados_principais_filtrados <- reactive({
       filter(
         ano == input$selectAnoP,
         regiao %in% input$selectRegiaoP,
-        faixa_de_peso %in% input$selectPesoP
+        faixa_de_peso %in% input$selectPesoP,
+        racacor %in% input$selectRacaP
       ) |>
       filter(
         if (input$selectTipoP == "Neonatais") 
@@ -630,7 +672,7 @@ dados_principais_filtrados <- reactive({
         else 
           tipo_do_obito == input$selectTipoP
       ) |>
-      group_by(regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      group_by(regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso, racacor) |>
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup()
   } else if (input$selectNivelP == "Estadual") {
@@ -638,7 +680,8 @@ dados_principais_filtrados <- reactive({
       filter(
         ano == input$selectAnoP,
         uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoP)]),
-        faixa_de_peso %in% input$selectPesoP
+        faixa_de_peso %in% input$selectPesoP,
+        racacor %in% input$selectRacaP
       ) |>
       filter(
         if (input$selectTipoP == "Neonatais") 
@@ -646,7 +689,7 @@ dados_principais_filtrados <- reactive({
         else 
           tipo_do_obito == input$selectTipoP
       ) |>
-      group_by(uf, regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      group_by(uf, regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso, racacor) |>
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup() 
   } else if (input$selectNivelP == "Municipal") {
@@ -655,7 +698,8 @@ dados_principais_filtrados <- reactive({
         ano == input$selectAnoP,
         uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuniP)]),
         municipio == input$selectMunicipioP,
-        faixa_de_peso %in% input$selectPesoP
+        faixa_de_peso %in% input$selectPesoP,
+        racacor %in% input$selectRacaP
       ) |>
       filter(
         if (input$selectTipoP == "Neonatais") 
@@ -663,7 +707,7 @@ dados_principais_filtrados <- reactive({
         else 
           tipo_do_obito == input$selectTipoP
       ) |>
-      group_by(municipio, uf, regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      group_by(municipio, uf, regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso, racacor) |>
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup()
   }
@@ -743,15 +787,6 @@ Row {.tabset .tabset-fade}
 
 ##### <span style = 'font-weight: 700; color: black'>Tabela de óbitos `r reactive(nome_tabela())` por causas principais definidas pelo DATASUS (Fonte: <a href = http://www2.datasus.gov.br/cid10/V2008/WebHelp/p00_p96.htm target = _blank>DATASUS</a>)</span>
 
-```{r}
-observe({
-  req(input$selectEstadoMuniP)
-  print(data_plot_principais() |> filter(ano > 2017))
-  
-  
-})
-```
-
 ```{r tabela_p}
 tags$style(HTML("
   .chart-wrapper .chart-stage {
@@ -799,7 +834,7 @@ renderReactable({
           )
       ) |>
       reactable(
-        groupBy = c("capitulo_cid10", "grupo_principais", "causabas_categoria"),
+        groupBy = c("capitulo_cid10", "grupo_principais", "causabas_categoria", "faixa_de_peso"),
         columns = list(
           capitulo_cid10 = colDef(
             name = "Capítulo CID-10",
@@ -817,6 +852,11 @@ renderReactable({
           ),
           faixa_de_peso = colDef(
             name = "Faixa de peso",
+            aggregate = JS("function() { return ''}"),
+            format = list(aggregated = colFormat(prefix = "Todas"))
+          ),
+          racacor = colDef(
+            name = "Raça/cor",
             aggregate = JS("function() { return ''}"),
             format = list(aggregated = colFormat(prefix = "Todas"))
           ),
@@ -911,7 +951,8 @@ data_plot_principais_aux <- reactive({
     dados_obitos_fetais_neonatais |>
       filter(
         regiao %in% input$selectRegiaoP,
-        faixa_de_peso %in% input$selectPesoP
+        faixa_de_peso %in% input$selectPesoP,
+        racacor %in% input$selectRacaP
       ) |>
       filter(
         if (input$selectTipoP == "Neonatais")
@@ -919,14 +960,15 @@ data_plot_principais_aux <- reactive({
         else
           tipo_do_obito == input$selectTipoP
       ) |>
-      group_by(regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      group_by(regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso, racacor) |>
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup()
   } else if (input$selectNivelP == "Estadual") {
     dados_obitos_fetais_neonatais |>
       filter(
         uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoP)]),
-        faixa_de_peso %in% input$selectPesoP
+        faixa_de_peso %in% input$selectPesoP,
+        racacor %in% input$selectRacaP
       ) |>
       filter(
         if (input$selectTipoP == "Neonatais")
@@ -934,7 +976,7 @@ data_plot_principais_aux <- reactive({
         else
           tipo_do_obito == input$selectTipoP
       ) |>
-      group_by(uf, regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      group_by(uf, regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso, racacor) |>
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup()
   } else if (input$selectNivelP == "Municipal") {
@@ -942,7 +984,8 @@ data_plot_principais_aux <- reactive({
       filter(
         uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuniP)]),
         municipio == input$selectMunicipioP,
-        faixa_de_peso %in% input$selectPesoP
+        faixa_de_peso %in% input$selectPesoP,
+        racacor %in% input$selectRacaP
       ) |>
       filter(
         if (input$selectTipoP == "Neonatais")
@@ -950,7 +993,7 @@ data_plot_principais_aux <- reactive({
         else
           tipo_do_obito == input$selectTipoP
       ) |>
-      group_by(municipio, uf, regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso) |>
+      group_by(municipio, uf, regiao, ano, capitulo_cid10, grupo_principais, causabas_categoria, tipo_do_obito, faixa_de_peso, racacor) |>
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup()
   }
@@ -1004,7 +1047,8 @@ data_plot_principais_local <- reactive({
 data_plot_principais_referencia <- reactive({
   dados_obitos_fetais_neonatais |>
     filter(
-      faixa_de_peso %in% input$selectPesoP
+      faixa_de_peso %in% input$selectPesoP,
+        racacor %in% input$selectRacaP
     ) |>
     filter(
       if (input$selectTipoP == "Neonatais")
