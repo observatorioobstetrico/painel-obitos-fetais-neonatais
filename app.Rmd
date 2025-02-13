@@ -105,10 +105,8 @@ df_meses <- data.frame(
                "agosto", "setembro", "outubro", "novembro", "dezembro")
 )
 
-data <- Sys.Date()
-data_por_extenso <- glue(
-  "{substr(data, 9, 10)} de {df_meses$nome_mes[which(df_meses$num_mes == as.numeric(substr(data, start = 6, stop = 7)))]} de {substr(data, 1, 4)}"
-)
+# Obtendo o dia, mês e ano por extenso
+data_por_extenso <- readRDS("R/data_por_extenso.RDS")
 ```
 
 Sobre
@@ -116,7 +114,7 @@ Sobre
 
 <h3><span style = "font-weight: bold;">O OOBr Óbitos Fetais e Neonatais</span></h3>
 
-É um painel de visualização dinâmico com análises acerca da mortalidade de fetos e neonatos no Brasil, sob a perspectiva de algumas variáveis da base de dados do Sistema de Informações sobre Mortalidade (SIM). As informações consideradas são referentes aos registros de óbitos de fetos e neonatos dos anos de 2012 a 2024 **(sendo os dados de 2023 e 2024 preliminares)**.
+É um painel de visualização dinâmico com análises acerca da mortalidade de fetos e neonatos no Brasil, sob a perspectiva de algumas variáveis da base de dados do Sistema de Informações sobre Mortalidade (SIM). As informações consideradas são referentes aos registros de óbitos de fetos e neonatos dos anos de 2012 a 2024 **(sendo os dados de 2024 preliminares)**.
 
 <h3><span style = "font-weight: bold;">O Observatório Obstétrico Brasileiro (OOBr)</span></h3>
 
@@ -126,7 +124,7 @@ Conta com **pesquisadores** da <a href = https://www.ufes.br target = _blank> Un
 
 <h3><span style = "font-weight: bold;">Os dados</span></h3>
 
-São providos do DATASUS do Ministério da Saúde e formam um grande banco anual composto por todos os registros das declarações de óbitos (o SIM) que está disponível a partir do ano de 1996. Atualmente, os dados do SIM estão disponíveis até 2024 **(sendo estes e os de 2023 preliminares)**. Os dados deste painel são atualizados na última sexta feira de cada mês, tendo a última atualização ocorrido em `r data_por_extenso`.
+São providos do DATASUS do Ministério da Saúde e formam um grande banco anual composto por todos os registros das declarações de óbitos (o SIM) que está disponível a partir do ano de 1996. Atualmente, os dados do SIM estão disponíveis até 2024 **(sendo estes preliminares)**. Os dados deste painel são atualizados na última sexta feira de cada mês, tendo a última atualização ocorrido em `r data_por_extenso`.
 
 <h3><span style = "font-weight: bold;">Contato</span></h3>
 
@@ -182,7 +180,7 @@ Inputs {.sidebar data-width=350 style="width: 350px; visibility: visible; top: 7
 ------------------------------------- 
 ```{r input-obitosM}
 hr();h5(span("Óbitos fetais e neonatais por categoria da CID-10", style = "font-weight: bold;")); hr()
-p(em("Obs.: os dados de 2023 são preliminares."))
+p(em("Obs.: os dados de 2024 são preliminares."))
 hr()
 
 selectInput(
@@ -247,6 +245,7 @@ conditionalPanel(
 )
 
 observeEvent(input$selectEstadoMuni, {
+  req(input$selectEstadoMuni)
   updateSelectizeInput(
     inputId = "selectMunicipio",
     choices = sort(dados_obitos_fetais_neonatais |> dplyr::filter(uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuni)])) |> pull(municipio) |> unique())
@@ -363,6 +362,7 @@ dados_filtrados <- reactive({
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup() 
   } else if (input$selectNivel == "Municipal") {
+    req(input$selectEstadoMuni)
     dados_obitos_fetais_neonatais |>
       filter(
         ano == input$selectAno,
@@ -409,7 +409,7 @@ nome_tabela <- reactive({
 
 *****
 
-Neste painel, um óbito foi considerado fetal caso tenha sido registrado no SIM-DOFET com idade gestacional igual ou superior a 22 semanas (`((GESTACAO != "Menos de 22 semanas" & !is.na(GESTACAO)) | (SEMAGESTAC >= 22 & SEMAGESTAC != 99))`) ou com peso igual ou superior a 500 g (`PESO >= 500`). O valor `99` da variável `SEMAGESTAC` foi considerado como um valor faltante.
+Neste painel, um óbito foi considerado fetal caso tenha sido registrado no SIM-DOFET com idade gestacional igual ou superior a 22 semanas ou com peso igual ou superior a 500 g. O valor `99` da variável `SEMAGESTAC` foi considerado como um valor faltante.
 
 
 
@@ -428,6 +428,7 @@ dados_tabela <- reactive({
     dados_filtrados() |>
       select(!c(uf, regiao, ano, tipo_do_obito))
   } else if (input$selectNivel == "Municipal") {
+    req(input$selectEstadoMuni)
     dados_filtrados() |>
       select(!c(municipio, uf, regiao, ano, tipo_do_obito))
   }
@@ -512,7 +513,7 @@ Inputs {.sidebar data-width=350 style="width: 350px; visibility: visible; top: 7
 ------------------------------------- 
 ```{r input-principais}
 hr();h5(span("Óbitos fetais e neonatais por causas principais", style = "font-weight: bold;")); hr()
-p(em("Obs.: os dados de 2023 são preliminares."))
+p(em("Obs.: os dados de 2024 são preliminares."))
 hr()
 
 selectInput(
@@ -693,6 +694,7 @@ dados_principais_filtrados <- reactive({
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup() 
   } else if (input$selectNivelP == "Municipal") {
+    req(input$selectEstadoMuniP)
     dados_obitos_fetais_neonatais |>
       filter(
         ano == input$selectAnoP,
@@ -802,6 +804,7 @@ dados_principais_tabela <- reactive({
     dados_principais_filtrados() |>
       select(!c(uf, regiao, ano, tipo_do_obito)) 
   } else if (input$selectNivelP == "Municipal") {
+    req(input$selectEstadoMunip)
     dados_principais_filtrados() |>
       select(!c(municipio, uf, regiao, ano, tipo_do_obito)) 
   }
@@ -980,6 +983,7 @@ data_plot_principais_aux <- reactive({
       summarise(obitos = sum(as.numeric(obitos))) |>
       ungroup()
   } else if (input$selectNivelP == "Municipal") {
+    req(input$selectEstadoMuniP)
     dados_obitos_fetais_neonatais |>
       filter(
         uf == unique(tabela_aux_municipios$sigla_uf[which(tabela_aux_municipios$uf == input$selectEstadoMuniP)]),

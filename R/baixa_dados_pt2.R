@@ -2,6 +2,22 @@ library(tidyverse)
 library(janitor)
 library(readr)
 library(data.table)
+library(glue)
+
+# Criando um objeto com a data de atualização por extenso
+## Obtendo o dia, mês e ano por extenso
+df_meses <- data.frame(
+  num_mes = 1:12,
+  nome_mes = c("janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho",
+               "agosto", "setembro", "outubro", "novembro", "dezembro")
+)
+
+data <- Sys.Date()
+data_por_extenso <- glue(
+  "{substr(data, 9, 10)} de {df_meses$nome_mes[which(df_meses$num_mes == as.numeric(substr(data, start = 6, stop = 7)))]} de {substr(data, 1, 4)}"
+)
+
+saveRDS(data_por_extenso, "R/data_por_extenso.RDS")
 
 # Lendo data.frames auxiliares (criados em cria_dfs_auxiliares.R) ---------
 df_cid10 <- read.csv("R/databases/df_cid10.csv") |>
@@ -13,24 +29,12 @@ df_aux_municipios <- read.csv("R/databases/df_aux_municipios.csv") |>
 
 
 # Baixando os dados preliminares do SIM -----------------------------------
-download.file("https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SIM/DO23OPEN.csv", "R/databases/DO23OPEN.csv", mode = "wb")
-download.file("https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SIM/DO24OPEN+(2).csv", "R/databases/DO24OPEN.csv", mode = "wb")
+download.file("https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SIM/DO24OPEN.csv", "R/databases/DO24OPEN.csv", mode = "wb")
 
 ## Lendo os dados preliminares e excluindo os arquivos baixados
-df_sim_preliminares_2023 <- fread("R/databases/DO23OPEN.csv", sep = ";") |> 
-  clean_names()
-file.remove("R/databases/DO23OPEN.csv")
-
-df_sim_preliminares_2024 <- fread("R/databases/DO24OPEN.csv", sep = ";") |> 
+df_sim_preliminares <- fread("R/databases/DO24OPEN.csv", sep = ";") |> 
   clean_names()
 file.remove("R/databases/DO24OPEN.csv")
-
-## Juntando os dados preliminares de 2023 e 2024
-df_sim_preliminares <- full_join(df_sim_preliminares_2023, df_sim_preliminares_2024)
-
-## Limpando a memória
-rm(df_sim_preliminares_2023, df_sim_preliminares_2024)
-gc()
 
 
 # Para os óbitos fetais ---------------------------------------------------
@@ -99,11 +103,11 @@ df_fetais_preliminares <- df_sim_preliminares |>
 
 sum(df_fetais_preliminares$obitos)
 
-## Juntando os dados preliminares com os dados de 2012 a 2021
-df_fetais_2012_2022 <- read.csv(gzfile("R/databases/dados_obitos_fetais_2012_2022.csv.gz")) |>
+## Juntando os dados preliminares com os dados de 2012 a 2023
+df_fetais_2012_2023 <- read.csv(gzfile("R/databases/dados_obitos_fetais_2012_2023.csv.gz")) |>
   mutate(codigo = as.character(codigo))
 
-df_fetais_completo <- full_join(df_fetais_2012_2022, df_fetais_preliminares) |>
+df_fetais_completo <- full_join(df_fetais_2012_2023, df_fetais_preliminares) |>
   arrange(codigo, ano)
 
 ## Exportando os dados 
@@ -175,11 +179,11 @@ df_neonatais_preliminares <- df_sim_preliminares |>
   summarise(obitos = sum(obitos)) |>
   ungroup()
 
-## Juntando os dados preliminares com os dados de 2012 a 2021
-df_neonatais_2012_2022 <- read.csv(gzfile("R/databases/dados_obitos_neonatais_2012_2022.csv.gz")) |>
+## Juntando os dados preliminares com os dados de 2012 a 2023
+df_neonatais_2012_2023 <- read.csv(gzfile("R/databases/dados_obitos_neonatais_2012_2023.csv.gz")) |>
   mutate(codigo = as.character(codigo))
 
-df_neonatais_completo <- full_join(df_neonatais_2012_2022, df_neonatais_preliminares) |>
+df_neonatais_completo <- full_join(df_neonatais_2012_2023, df_neonatais_preliminares) |>
   arrange(codigo, ano)
 
 ## Exportando os dados 
