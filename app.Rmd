@@ -69,9 +69,9 @@ library(glue)
 tabela_aux_municipios <- read_delim("R/databases/tabela_auxiliar_municipios.csv", 
                                               delim = ",", escape_double = FALSE, trim_ws = TRUE) 
 
-dados_obitos_fetais <- read.csv(gzfile("dados_oobr_obitos_fetais_2012_2024.csv.gz")) 
+dados_obitos_fetais <- read.csv(gzfile("dados_oobr_obitos_fetais_2012_2025.csv.gz")) 
 
-dados_obitos_neonatais <- read.csv(gzfile("dados_oobr_obitos_neonatais_2012_2024.csv.gz")) 
+dados_obitos_neonatais <- read.csv(gzfile("dados_oobr_obitos_neonatais_2012_2025.csv.gz")) 
 
 dados_obitos_fetais_neonatais <- full_join(dados_obitos_fetais, dados_obitos_neonatais) |>
   arrange(codigo) |>
@@ -114,7 +114,7 @@ Sobre
 
 <h3><span style = "font-weight: bold;">O OOBr Óbitos Fetais e Neonatais</span></h3>
 
-É um painel de visualização dinâmico com análises acerca da mortalidade de fetos e neonatos no Brasil, sob a perspectiva de algumas variáveis da base de dados do Sistema de Informações sobre Mortalidade (SIM). As informações consideradas são referentes aos registros de óbitos de fetos e neonatos dos anos de 2012 a 2024 **(sendo os dados de 2024 preliminares)**.
+É um painel de visualização dinâmico com análises acerca da mortalidade de fetos e neonatos no Brasil, sob a perspectiva de algumas variáveis da base de dados do Sistema de Informações sobre Mortalidade (SIM). As informações consideradas são referentes aos registros de óbitos de fetos e neonatos dos anos de 2012 a 2025 **(sendo estes e os de 2024 preliminares)**.
 
 <h3><span style = "font-weight: bold;">O Observatório Obstétrico Brasileiro (OOBr)</span></h3>
 
@@ -124,7 +124,7 @@ Conta com **pesquisadores** da <a href = https://www.ufes.br target = _blank> Un
 
 <h3><span style = "font-weight: bold;">Os dados</span></h3>
 
-São providos do DATASUS do Ministério da Saúde e formam um grande banco anual composto por todos os registros das declarações de óbitos (o SIM) que está disponível a partir do ano de 1996. Atualmente, os dados do SIM estão disponíveis até 2024 **(sendo estes preliminares)**. Os dados deste painel são atualizados na última sexta feira de cada mês, tendo a última atualização ocorrido em `r data_por_extenso`.
+São providos do DATASUS do Ministério da Saúde e formam um grande banco anual composto por todos os registros das declarações de óbitos (o SIM) que está disponível a partir do ano de 1996. Atualmente, os dados do SIM estão disponíveis até 2024 **(sendo estes e os de 2024 preliminares)**. Os dados deste painel são atualizados na última sexta feira de cada mês, tendo a última atualização ocorrido em `r data_por_extenso`.
 
 <h3><span style = "font-weight: bold;">Contato</span></h3>
 
@@ -180,7 +180,7 @@ Inputs {.sidebar data-width=350 style="width: 350px; visibility: visible; top: 7
 ------------------------------------- 
 ```{r input-obitosM}
 hr();h5(span("Óbitos fetais e neonatais por categoria da CID-10", style = "font-weight: bold;")); hr()
-p(em("Obs.: os dados de 2024 são preliminares."))
+p(em("Obs.: os dados de 2024 e 2025 são preliminares."))
 hr()
 
 selectInput(
@@ -513,7 +513,7 @@ Inputs {.sidebar data-width=350 style="width: 350px; visibility: visible; top: 7
 ------------------------------------- 
 ```{r input-principais}
 hr();h5(span("Óbitos fetais e neonatais por causas principais", style = "font-weight: bold;")); hr()
-p(em("Obs.: os dados de 2024 são preliminares."))
+p(em("Obs.: os dados de 2024 e 2025 são preliminares."))
 hr()
 
 selectInput(

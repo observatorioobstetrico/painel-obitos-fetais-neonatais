@@ -30,12 +30,22 @@ df_aux_municipios <- read.csv("R/databases/df_aux_municipios.csv") |>
 
 # Baixando os dados preliminares do SIM -----------------------------------
 download.file("https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SIM/DO24OPEN.csv", "R/databases/DO24OPEN.csv", mode = "wb")
+download.file("https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SIM/csv/DO25OPEN_csv.zip", "R/databases/DO25OPEN_csv.zip", mode = "wb")
 
 ## Lendo os dados preliminares e excluindo os arquivos baixados
-df_sim_preliminares <- fread("R/databases/DO24OPEN.csv", sep = ";") |> 
+df_sim_preliminares_24 <- fread("R/databases/DO24OPEN.csv", sep = ";") |> 
   clean_names()
 file.remove("R/databases/DO24OPEN.csv")
 
+df_sim_preliminares_25 <- fread("R/databases/DO25OPEN_csv.zip", sep = ";") |> 
+  clean_names()
+file.remove("R/databases/DO25OPEN_csv.zip")
+
+## Verificando se os nomes das colunas são todos os mesmos
+all(names(df_sim_preliminares_24) == names(df_sim_preliminares_25))
+
+## Juntando as bases preliminares
+df_sim_preliminares <- full_join(df_sim_preliminares_24, df_sim_preliminares_25)
 
 # Para os óbitos fetais ---------------------------------------------------
 ## Criando a variável de ano, limitando a variável 'causabas' a três caracteres e filtrando apenas pelos óbitos fetais que consideramos
@@ -107,11 +117,15 @@ sum(df_fetais_preliminares$obitos)
 df_fetais_2012_2023 <- read.csv(gzfile("R/databases/dados_obitos_fetais_2012_2023.csv.gz")) |>
   mutate(codigo = as.character(codigo))
 
-df_fetais_completo <- full_join(df_fetais_2012_2023, df_fetais_preliminares) |>
-  arrange(codigo, ano)
+if (nrow(df_fetais_preliminares) == 0) {
+  df_fetais_completo <- df_fetais_2012_2023
+} else {
+  df_fetais_completo <- full_join(df_fetais_2012_2023, df_fetais_preliminares) |>
+    arrange(codigo, ano)
+}
 
 ## Exportando os dados 
-write.table(df_fetais_completo, gzfile('dados_oobr_obitos_fetais_2012_2024.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
+write.table(df_fetais_completo, gzfile('dados_oobr_obitos_fetais_2012_2025.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
 
 
 # Para os óbitos neonatais ------------------------------------------------
@@ -187,7 +201,7 @@ df_neonatais_completo <- full_join(df_neonatais_2012_2023, df_neonatais_prelimin
   arrange(codigo, ano)
 
 ## Exportando os dados 
-write.table(df_neonatais_completo, gzfile('dados_oobr_obitos_neonatais_2012_2024.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
+write.table(df_neonatais_completo, gzfile('dados_oobr_obitos_neonatais_2012_2025.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
 
 
 
