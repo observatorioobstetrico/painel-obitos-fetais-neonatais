@@ -3,6 +3,7 @@ library(janitor)
 library(readr)
 library(data.table)
 library(glue)
+library(microdatasus)
 
 # Criando um objeto com a data de atualização por extenso
 ## Obtendo o dia, mês e ano por extenso
@@ -29,20 +30,26 @@ df_aux_municipios <- read.csv("R/databases/df_aux_municipios.csv") |>
 
 
 # Baixando os dados preliminares do SIM -----------------------------------
-download.file("https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SIM/DO24OPEN.csv", "R/databases/DO24OPEN.csv", mode = "wb")
 download.file("https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SIM/csv/DO25OPEN_csv.zip", "R/databases/DO25OPEN_csv.zip", mode = "wb")
 
 ## Lendo os dados preliminares e excluindo os arquivos baixados
-df_sim_preliminares_24 <- fread("R/databases/DO24OPEN.csv", sep = ";") |> 
+df_sim_preliminares_24 <- fetch_datasus(
+  year_start = 2024,
+  year_end = 2024,
+  information_system = "SIM-DOFET"
+) |>
   clean_names()
-file.remove("R/databases/DO24OPEN.csv")
 
 df_sim_preliminares_25 <- fread("R/databases/DO25OPEN_csv.zip", sep = ";") |> 
   clean_names()
 file.remove("R/databases/DO25OPEN_csv.zip")
 
 ## Verificando se os nomes das colunas são todos os mesmos
-all(names(df_sim_preliminares_24) == names(df_sim_preliminares_25))
+names(df_sim_preliminares_24) %in% names(df_sim_preliminares_25)
+
+df_sim_preliminares_25 <- df_sim_preliminares_25 |> 
+  select(names(df_sim_preliminares_24)[which(names(df_sim_preliminares_24) %in% names(df_sim_preliminares_25))]) |>
+  mutate_if(is.numeric, as.character)
 
 ## Juntando as bases preliminares
 df_sim_preliminares <- full_join(df_sim_preliminares_24, df_sim_preliminares_25)
