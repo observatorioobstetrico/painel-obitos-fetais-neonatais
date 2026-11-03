@@ -29,18 +29,26 @@ df_aux_municipios <- read.csv("R/databases/df_aux_municipios.csv") |>
   mutate_if(is.numeric, as.character)
 
 
-# Baixando os dados preliminares do SIM -----------------------------------
-download.file("https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SIM/csv/Mortalidade_Geral_2025_csv.zip", "R/databases/DO25OPEN_csv.zip", mode = "wb")
-
-## Lendo os dados preliminares e excluindo os arquivos baixados
-df_sim_preliminares <- fread("R/databases/DO25OPEN_csv.zip", sep = ";") |> 
+# Baixando os dados preliminares do SIM-DOFET ------------------------------
+df_sim_dofet_preliminares <- fetch_datasus(
+  year_start = 2025,
+  year_end = 2026,
+  information_system = "SIM-DOFET"
+) |>
   clean_names()
 
-file.remove("R/databases/DO25OPEN_csv.zip")
+# Baixando os dados preliminares do SIM-DOINF -----------------------------
+df_sim_doinf_preliminares <- fetch_datasus(
+  year_start = 2025,
+  year_end = 2026,
+  information_system = "SIM-DOINF"
+) |>
+  clean_names()
+
 
 # Para os óbitos fetais ---------------------------------------------------
 ## Criando a variável de ano, limitando a variável 'causabas' a três caracteres e filtrando apenas pelos óbitos fetais que consideramos
-df_fetais_preliminares <- df_sim_preliminares |>
+df_fetais_preliminares <- df_sim_dofet_preliminares |>
   mutate(
     ano = as.numeric(substr(dtobito, nchar(dtobito) - 3, nchar(dtobito))),
     causabas = substr(causabas, 1, 3),
@@ -105,23 +113,23 @@ df_fetais_preliminares <- df_sim_preliminares |>
 sum(df_fetais_preliminares$obitos)
 
 ## Juntando os dados preliminares com os dados de 2012 a 2024
-df_fetais_2012_2024 <- read.csv(gzfile("R/databases/dados_obitos_fetais_2012_2024.csv.gz")) |>
+df_fetais_consolidados <- read.csv(gzfile("R/databases/dados_obitos_fetais_consolidados.csv.gz")) |>
   mutate(codigo = as.character(codigo))
 
 if (nrow(df_fetais_preliminares) == 0) {
-  df_fetais_completo <- df_fetais_2012_2024
+  df_fetais_completo <- df_fetais_consolidados
 } else {
-  df_fetais_completo <- full_join(df_fetais_2012_2024, df_fetais_preliminares) |>
+  df_fetais_completo <- full_join(df_fetais_consolidados, df_fetais_preliminares) |>
     arrange(codigo, ano)
 }
 
 ## Exportando os dados 
-write.table(df_fetais_completo, gzfile('dados_oobr_obitos_fetais_2012_2025.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
+write.table(df_fetais_completo, gzfile('dados_oobr_obitos_fetais_completo.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
 
 
 # Para os óbitos neonatais ------------------------------------------------
 ## Criando a variável de ano, limitando a variável 'causabas' a três caracteres, filtrando pelos óbitos neonatais e pós-neonatais e criando algumas variáveis
-df_neonatais_preliminares <- df_sim_preliminares |>
+df_neonatais_preliminares <- df_sim_doinf_preliminares |>
   mutate(
     ano = as.numeric(substr(dtobito, nchar(dtobito) - 3, nchar(dtobito))),
     codmunres = as.character(codmunres),
@@ -185,14 +193,14 @@ df_neonatais_preliminares <- df_sim_preliminares |>
   ungroup()
 
 ## Juntando os dados preliminares com os dados de 2012 a 2024
-df_neonatais_2012_2024 <- read.csv(gzfile("R/databases/dados_obitos_neonatais_2012_2024.csv.gz")) |>
+df_neonatais_consolidados <- read.csv(gzfile("R/databases/dados_obitos_neonatais_consolidados.csv.gz")) |>
   mutate(codigo = as.character(codigo))
 
-df_neonatais_completo <- full_join(df_neonatais_2012_2024, df_neonatais_preliminares) |>
+df_neonatais_completo <- full_join(df_neonatais_consolidados, df_neonatais_preliminares) |>
   arrange(codigo, ano)
 
 ## Exportando os dados 
-write.table(df_neonatais_completo, gzfile('dados_oobr_obitos_neonatais_2012_2025.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
+write.table(df_neonatais_completo, gzfile('dados_oobr_obitos_neonatais_completo.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
 
 
 

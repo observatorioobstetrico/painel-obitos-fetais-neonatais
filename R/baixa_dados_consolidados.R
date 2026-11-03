@@ -14,7 +14,7 @@ df_aux_municipios <- read.csv("R/databases/df_aux_municipios.csv") |>
 
 
 # Para os óbitos fetais ---------------------------------------------------
-## Baixando os dados do SIM-DOFET de 2012 a 2023
+## Baixando os dados consolidados do SIM-DOFET
 df_sim_dofet_aux <- fetch_datasus(
   year_start = 2012,
   year_end = 2024,
@@ -81,11 +81,11 @@ df_fetais <- df_sim_dofet_aux |>
   ungroup()
 
 ## Exportando os dados 
-write.table(df_fetais, gzfile('R/databases/dados_obitos_fetais_2012_2024.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
+write.table(df_fetais, gzfile('R/databases/dados_obitos_fetais_consolidados.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
 
 
 # Para os óbitos neonatais ------------------------------------------------
-## Baixando os dados do SIM-DOINF de 2012 a 2024
+## Baixando os dados consolidados do SIM-DOINF
 df_sim_doinf_aux <- fetch_datasus(
   year_start = 2012,
   year_end = 2024,
@@ -153,7 +153,7 @@ df_neonatais <- df_sim_doinf_aux |>
   ungroup()
 
 ## Exportando os dados 
-write.table(df_neonatais, gzfile('R/databases/dados_obitos_neonatais_2012_2024.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
+write.table(df_neonatais, gzfile('R/databases/dados_obitos_neonatais_consolidados.csv.gz'), sep = ",", dec = ".", row.names = FALSE, fileEncoding = "utf-8")
 
 
 
